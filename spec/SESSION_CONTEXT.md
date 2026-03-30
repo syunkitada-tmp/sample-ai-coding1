@@ -2,8 +2,8 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 全タスク完了（MVP + Integration テスト + .env.example）
-- **Progress**: 全 P1–P7 完了（Docker Compose 本番整備のみ任意残存）
+- **Current Phase**: 全タスク完了（P1–P7 + Alembic マイグレーション + Docker 本番整備）
+- **Progress**: TODO.md 全項目 `[x]`
 - **テスト**: 78 passed / 0 failed（unit 72 + integration 6）
 
 ## 2. Technical Context
@@ -53,13 +53,13 @@ tests/
 
 ## 5. Next Step
 
-- 全タスク完了。残った任意作業:
-  - Docker Compose 本番向け整備（マルチステージビルド等）
-  - Alembic 初回マイグレーション（MySQL 起動後: `uv run alembic upgrade head`）
+- 全タスク完了。本番稼働に向けた作業:
+  - MySQL 起動後: `docker compose up` で `migrate` サービスが自動的に `alembic upgrade head` を実行
+  - 手動実行: `DATABASE_URL=mysql+... uv run alembic upgrade head`
 
 ## 6. Pending Issues / Notes
 
-- [ ] Alembic の `env.py` で `config.py` の `database_url` を参照する方法を確認する
-- [ ] `SELECT FOR UPDATE SKIP LOCKED` が使用する MySQL バージョン（8.0+）を Docker イメージで固定すること
-- [ ] `plugin_dir` の値はコンテナ環境では絶対パスが安全か確認する
-- [ ] Integration テスト（P7）は MVP 完成後に優先度を再評価する
+- [x] Alembic の `env.py` で `config.py` の `database_url` を参照 → `settings.database_url` を `set_main_option()` で注入済み
+- [x] `SELECT FOR UPDATE SKIP LOCKED` が使用する MySQL バージョン（8.0+）を Docker イメージで固定すること → `mysql:8.0` 指定済み（docker-compose.yml）
+- [x] `plugin_dir` の値はコンテナ環境では絶対パスが安全か確認する → `WORKDIR /app` + `COPY src/ ./src/` により `/app/src/plugins` に解決されるため相対パスで問題なし
+- [x] Integration テスト（P7）は MVP 完成後に優先度を再評価 → 6テスト実装済み

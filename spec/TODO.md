@@ -10,7 +10,7 @@
 - [x] Setup: ORM モデル実装
   - [x] `src/domain/models/message.py` (messages テーブル)
   - [x] `src/domain/models/job.py` (jobs テーブル: status / retry_count / retry_after / args / thread_context)
-- [ ] Setup: Alembic マイグレーション初回作成・適用（MySQL 起動時に実施）
+- [x] Setup: Alembic マイグレーション初回作成・適用（`migrations/versions/6e145104e22a_initial_schema.py`）
 - [x] Setup: pytest 環境構築 (`tests/` ディレクトリ・`conftest.py`)
 
 ## P2: コアロジック（技術リスクの早期検証）
