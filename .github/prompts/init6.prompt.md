@@ -1,9 +1,9 @@
 ---
-description: "プロジェクト変更 Phase 5: TDD サイクルで最優先タスクから実装を進めます。"
+description: "プロジェクト初期化 Phase 6: TDD サイクルで最優先タスクから実装を開始します。"
 agent: "agent"
 ---
 
-# Phase 5: 実装 (TDD)
+# Phase 6: 実装開始 (TDD)
 
 ## Role
 
@@ -23,7 +23,6 @@ agent: "agent"
 - `spec/SESSION_CONTEXT.md`
 - `spec/TODO.md`
 - `spec/KNOWLEDGE_BASE.md`（存在する場合）
-- `spec/PROPOSAL.md`（今回の変更提案）
 
 ### Step 2: タスク着手前の相談
 
@@ -33,7 +32,6 @@ agent: "agent"
 - 対象タスクと対応する `.feature` シナリオ
 - 実装アプローチの概要
 - 作成・修正するファイルの一覧
-- 既存テストへの影響（デグレリスク）
 
 ### Step 3: TDD サイクルで実装
 
@@ -42,8 +40,6 @@ agent: "agent"
 1. **Red**: テストを書き、失敗することを確認
 2. **Green**: テストをパスする最小限のコードを書く
 3. **Refactor**: コードを整理する
-
-**重要**: 実装後、既存テストが全てパスすることを確認してください（デグレチェック）。
 
 ### Step 4: 進行状況の更新
 
@@ -57,9 +53,29 @@ agent: "agent"
 作業中に発生したエラー、解決に時間がかかったこと、手順上の工夫を発見したら、**`spec/KNOWLEDGE_BASE.md` に追記** してください。
 同じエラーで 2 回以上立ち止まった場合は、必ずナレッジとして記録してください。
 
+## Output Format (spec/KNOWLEDGE_BASE.md)
+
+```markdown
+# Project Knowledge Base
+
+## 1. Local Development & Testing Tips
+
+- **Issue**: [問題の説明]
+- **Solution**: [解決策]
+
+## 2. Common Errors & Fixes
+
+- **Error**: [エラー内容]
+- **Fix**: [修正方法]
+
+## 3. Implementation Patterns
+
+- [実装で確立したパターンや慣例]
+```
+
 ## 完了条件
 
-- 最優先タスクが完了し、テストがパスすること（新規テスト + 既存テスト全て）
+- 最優先タスクが完了し、テストがパスすること
 - `spec/TODO.md`、`spec/SESSION_CONTEXT.md` が更新されること
 
 ## フェーズ完了後
@@ -68,5 +84,6 @@ agent: "agent"
 
 > **タスク完了！** [タスク名] が実装されました。
 >
-> 引き続き次のタスクに進む場合は、再度 `/project_change_phase5` を実行してください。
-> 全タスクが完了したら **Phase 6: 変更レビュー & ドキュメント更新** に進みます。`/project_change_phase6` を実行してください。
+> 引き続き次のタスクに進む場合は、再度 `/init6` を実行してください。
+> 全タスクが完了したら **Phase 7: 全体レビュー & ドキュメント整備** に進みます。`/init7` を実行してください。
+> 要件やアーキテクチャの見直しが必要な場合は、該当フェーズのプロンプトに戻れます。
