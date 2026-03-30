@@ -1,12 +1,31 @@
-FROM python:3.12-slim
+# ---- builder: install dependencies into .venv ----
+FROM python:3.12-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --frozen --no-cache
 
-COPY . .
+# ---- runtime: lean image without uv ----
+FROM python:3.12-slim AS runtime
 
-CMD ["uv", "run", "python", "-m", "src.worker.main"]
+WORKDIR /app
+
+# Copy only the virtual environment and application source
+COPY --from=builder /app/.venv /app/.venv
+COPY src/ ./src/
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN useradd -r -u 1001 -s /bin/false appuser && \
+    chown -R appuser /app
+
+USER appuser
+
+CMD ["python", "-m", "src.worker.main"]
+

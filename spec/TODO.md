@@ -76,5 +76,5 @@
 
 - [x] Setup: Integration テスト環境構築 (`tests/integration/`)
   - [x] Scenario: API レベルの受信〜ジョブ登録 E2E 検証
-- [ ] Setup: Docker Compose 本番向け整備 (`Dockerfile.api` / `Dockerfile.worker`)
+- [x] Setup: Docker Compose 本番向け整備 (`Dockerfile.api` / `Dockerfile.worker`)
 - [x] Setup: `.env.example` 作成

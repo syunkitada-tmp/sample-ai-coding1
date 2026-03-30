@@ -6,11 +6,29 @@ services:
       MYSQL_DATABASE: chatops
     ports:
       - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - chatops_net
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file: .env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - chatops_net
+    restart: "no"
 
   api:
     build:
@@ -22,6 +40,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - chatops_net
+    restart: unless-stopped
 
   worker:
     build:
@@ -31,3 +54,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - chatops_net
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  chatops_net:
+    driver: bridge
+
