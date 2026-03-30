@@ -1,0 +1,80 @@
+# Implementation Todo List
+
+## P1: 基盤構築（全タスクの前提）
+
+- [ ] Setup: プロジェクト初期化 (`pyproject.toml` / `requirements.txt`)
+- [ ] Setup: Docker Compose 構成 (API / Worker / MySQL)
+- [ ] Setup: pydantic-settings による `config.py` 実装 (`database_url`, `worker_polling_interval`, `worker_max_concurrency`, `worker_max_retry_count`, `slack_proxy_url`, `plugin_dir`)
+- [ ] Setup: Alembic 初期化 (`migrations/` ディレクトリ・`env.py`)
+- [ ] Setup: SQLAlchemy エンジン・セッションファクトリ (`src/infrastructure/db.py`)
+- [ ] Setup: ORM モデル実装
+  - [ ] `src/domain/models/message.py` (messages テーブル)
+  - [ ] `src/domain/models/job.py` (jobs テーブル: status / retry_count / retry_after / args / thread_context)
+- [ ] Setup: Alembic マイグレーション初回作成・適用
+- [ ] Setup: pytest 環境構築 (`tests/` ディレクトリ・`conftest.py`)
+
+## P2: コアロジック（技術リスクの早期検証）
+
+- [ ] Feature: コマンドパーサー (`src/domain/services/command_parser.py`)
+  - [ ] Scenario: `!cmd --opt val arg` 形式を正しく解析できる
+  - [ ] Scenario: コマンドが含まれないテキストを判定できる
+  - [ ] Scenario: 複数コマンドが含まれるテキストを検出できる
+- [ ] Feature: BasePlugin ABC (`src/domain/interfaces/plugin.py`)
+  - [ ] `command_name` / `description` / `execute` の抽象インターフェース定義
+- [ ] Feature: プラグインローダー (`src/infrastructure/plugin_loader.py`)
+  - [ ] Scenario: Framework discovers a new plugin placed in the plugin directory
+  - [ ] Scenario: Plugin without a required interface field is rejected at load time
+  - [ ] Scenario: Removing a plugin file makes the command unavailable after reload
+  - [ ] Scenario Outline: Plugin interface must define all required fields
+
+## P3: メッセージ受信 API + 永続化・ジョブ登録
+
+- [ ] Feature: Slack 投稿プロキシクライアント (`src/infrastructure/slack_client.py`)
+- [ ] Feature: メッセージサービス (`src/domain/services/message_service.py`)
+  - [ ] Scenario: Persist a plain message without a command
+  - [ ] Scenario: Persist a message and enqueue a job for a valid command
+  - [ ] Scenario: Reject a message containing multiple commands
+  - [ ] Scenario: Reject a message with an unknown command
+  - [ ] Scenario: Message save and job registration succeed or fail atomically
+- [ ] Feature: メッセージ受信 API (`src/api/routers/messages.py`)
+  - [ ] Scenario: Successfully receive a message with all required fields
+  - [ ] Scenario Outline: Reject a request with a missing required field
+  - [ ] Scenario: Reject a request with an empty body
+- [ ] Feature: FastAPI アプリ起動 (`src/api/main.py`, `src/api/dependencies.py`)
+
+## P4: 非同期ワーカー
+
+- [ ] Feature: ジョブサービス (`src/domain/services/job_service.py`)
+  - [ ] Scenario: Worker picks up a pending job and executes it successfully
+  - [ ] Scenario: Worker does not pick up a job that is already processing
+  - [ ] Scenario: Worker respects the configured concurrency limit
+- [ ] Feature: ワーカー本体 (`src/worker/executor.py`, `src/worker/main.py`)
+  - [ ] Scenario: Worker executes multiple pending jobs concurrently
+  - [ ] Scenario: Worker polls again after the configured interval
+
+## P5: リトライ機構
+
+- [ ] Feature: リトライ制御 (`src/domain/services/job_service.py` 拡張)
+  - [ ] Scenario: Failed job is scheduled for retry within the limit
+  - [ ] Scenario: Failed job is not picked up before retry_after
+  - [ ] Scenario: Failed job is picked up after retry_after has passed
+  - [ ] Scenario: Job exceeding the retry limit is marked as failed and notified
+  - [ ] Scenario Outline: Retry count boundary behaviour
+
+## P6: プラグイン実装
+
+- [ ] Feature: `!help` プラグイン (`src/plugins/help.py`)
+  - [ ] Scenario: Help returns a list of all registered commands
+  - [ ] Scenario: Help reply format is "!command_name: description" per line
+  - [ ] Scenario: Help returns a message when no plugins are registered
+- [ ] Feature: `!alert` ダミープラグイン (`src/plugins/alert.py`)
+  - [ ] Scenario: Successfully execute !alert with required --host option
+  - [ ] Scenario: Execute !alert with --host option and positional arguments
+  - [ ] Scenario: Fail when --host option is missing
+
+## P7: オプション（MVP 完成後）
+
+- [ ] Setup: Integration テスト環境構築 (`tests/integration/`)
+  - [ ] Scenario: API レベルの受信〜ジョブ登録 E2E 検証
+- [ ] Setup: Docker Compose 本番向け整備 (`Dockerfile.api` / `Dockerfile.worker`)
+- [ ] Setup: `.env.example` 作成
