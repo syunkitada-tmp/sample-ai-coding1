@@ -57,6 +57,21 @@ chatops/
 │   ├── versions/
 │   └── alembic.ini
 │
+├── features/                         # BDD 仕様（src/ 構成に対応）
+│   ├── api/
+│   │   ├── receive_message.feature
+│   │   └── receive_message.feature.ja
+│   ├── domain/
+│   │   ├── persist_and_enqueue.feature(.ja)
+│   │   ├── retry.feature(.ja)
+│   │   └── plugin_extension.feature(.ja)
+│   ├── worker/
+│   │   ├── async_worker.feature
+│   │   └── async_worker.feature.ja
+│   └── plugins/
+│       ├── help_command.feature(.ja)
+│       └── dummy_alert_command.feature(.ja)
+│
 ├── tests/
 │   ├── unit/                         # pytest ユニットテスト（必須）/ src/ 構成に対応
 │   │   ├── api/
@@ -135,6 +150,8 @@ settings = Settings()
 - **リトライ上限超過**: ステータスを `failed` に確定し、Slack スレッドへ最終失敗通知を投稿する
 - **プラグインロード失敗**: 起動時にログ出力し、該当プラグインのみスキップして続行する
 - **API バリデーションエラー**: FastAPI の Pydantic バリデーションにより自動で HTTP 400 を返す
+- **コマンド検出エラー（複数コマンド / 未知コマンド）**: `message_service` 内で検出し、ジョブ登録は行わず API 層から `slack_client` を直接呼び出してエラー通知を Slack スレッドへ投稿する
+- **プラグイン引数バリデーションエラー**: プラグインの `execute` が `ValueError` 等を送出した場合は一時障害とみなさず、`retry_count` を加算せずに即座にステータスを `failed` に確定し、Slack スレッドにエラー内容を通知する
 
 ### プラグイン設計指針
 
