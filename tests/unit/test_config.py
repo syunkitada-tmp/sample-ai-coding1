@@ -6,7 +6,7 @@ def test_settings_default_values(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setenv("SLACK_PROXY_URL", "http://localhost:8081/post")
 
-    from config import Settings
+    from src.config import Settings
 
     s = Settings()
     assert s.worker_polling_interval == 5
@@ -23,7 +23,7 @@ def test_settings_custom_values(monkeypatch):
     monkeypatch.setenv("WORKER_MAX_RETRY_COUNT", "5")
     monkeypatch.setenv("PLUGIN_DIR", "custom/plugins")
 
-    from config import Settings
+    from src.config import Settings
 
     s = Settings()
     assert s.database_url == "mysql+pymysql://root:test@db/chatops"

@@ -7,7 +7,7 @@ from typing import Generator
 
 @lru_cache(maxsize=1)
 def get_engine():
-    from config import settings
+    from src.config import settings
 
     return create_engine(settings.database_url)
 

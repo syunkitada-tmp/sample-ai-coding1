@@ -47,6 +47,7 @@ chatops/
 │   │   ├── alert.py                  # ダミーコマンド !alert（リファレンス実装）
 │   │   └── help.py                   # ビルトイン !help コマンド
 │   │
+│   ├── config.py                     # pydantic-settings BaseSettings（環境変数 / .env 管理）
 │   └── infrastructure/
 │       ├── db.py                     # SQLAlchemy エンジン・セッションファクトリ
 │       ├── plugin_loader.py          # plugins/ を自動スキャン・登録
@@ -93,12 +94,11 @@ chatops/
 │       └── api/
 │           └── test_messages_api.py
 │
-├── config.py                         # pydantic-settings BaseSettings（環境変数 / .env 管理）
 ├── .env.example                      # 環境変数テンプレート
 ├── docker-compose.yml
 ├── Dockerfile.api
 ├── Dockerfile.worker
-└── requirements.txt
+└── pyproject.toml
 ```
 
 ## 3. Implementation Policy
@@ -109,7 +109,7 @@ chatops/
 全設定値は環境変数または `.env` ファイルから取得する。
 
 ```python
-# config.py（例）
+# src/config.py（例）
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):

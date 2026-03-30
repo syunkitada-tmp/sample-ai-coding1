@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from config import settings
+from src.config import settings
 from src.domain.models.base import Base
 import src.domain.models.message  # noqa: F401
 import src.domain.models.job  # noqa: F401
