@@ -15,17 +15,17 @@
 
 ## P2: コアロジック（技術リスクの早期検証）
 
-- [ ] Feature: コマンドパーサー (`src/domain/services/command_parser.py`)
-  - [ ] Scenario: `!cmd --opt val arg` 形式を正しく解析できる
-  - [ ] Scenario: コマンドが含まれないテキストを判定できる
-  - [ ] Scenario: 複数コマンドが含まれるテキストを検出できる
-- [ ] Feature: BasePlugin ABC (`src/domain/interfaces/plugin.py`)
-  - [ ] `command_name` / `description` / `execute` の抽象インターフェース定義
-- [ ] Feature: プラグインローダー (`src/infrastructure/plugin_loader.py`)
-  - [ ] Scenario: Framework discovers a new plugin placed in the plugin directory
-  - [ ] Scenario: Plugin without a required interface field is rejected at load time
-  - [ ] Scenario: Removing a plugin file makes the command unavailable after reload
-  - [ ] Scenario Outline: Plugin interface must define all required fields
+- [x] Feature: コマンドパーサー (`src/domain/services/command_parser.py`)
+  - [x] Scenario: `!cmd --opt val arg` 形式を正しく解析できる
+  - [x] Scenario: コマンドが含まれないテキストを判定できる
+  - [x] Scenario: 複数コマンドが含まれるテキストを検出できる
+- [x] Feature: BasePlugin ABC (`src/domain/interfaces/plugin.py`)
+  - [x] `command_name` / `description` / `execute` の抽象インターフェース定義
+- [x] Feature: プラグインローダー (`src/infrastructure/plugin_loader.py`)
+  - [x] Scenario: Framework discovers a new plugin placed in the plugin directory
+  - [x] Scenario: Plugin without a required interface field is rejected at load time
+  - [x] Scenario: Removing a plugin file makes the command unavailable after reload
+  - [x] Scenario Outline: Plugin interface must define all required fields
 
 ## P3: メッセージ受信 API + 永続化・ジョブ登録
 

@@ -2,9 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 実装中（P1 完了 → P2 着手中）
-- **Progress**: 7 / 43 タスク完了
-- **テスト**: 8 passed / 0 failed
+- **Current Phase**: Phase 6 実装中（P2 完了 → P3 着手中）
+- **Progress**: 19 / 43 タスク完了
+- **テスト**: 24 passed / 0 failed
 
 ## 2. Technical Context
 
@@ -53,10 +53,11 @@ tests/
 
 ## 5. Next Step
 
-- 次に着手すべきこと: **P2 コアロジック**
-  1. `BasePlugin` ABC (`src/domain/interfaces/plugin.py`)
-  2. コマンドパーサー (`src/domain/services/command_parser.py`)
-  3. プラグインローダー (`src/infrastructure/plugin_loader.py`)
+- 次に着手すべきこと: **P3 メッセージ受信 API + 永続化・ジョブ登録**
+  1. `src/infrastructure/slack_client.py`
+  2. `src/domain/services/message_service.py`
+  3. `src/api/routers/messages.py`
+  4. `src/api/main.py`
 
 ## 6. Pending Issues / Notes
 
