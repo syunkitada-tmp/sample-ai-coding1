@@ -69,3 +69,14 @@
 - **`NoRetryError` パターン**: プラグインがリトライ不要の失敗を表現したい場合は `NoRetryError` を raise する。`executor._execute_job()` がこれを捕捉し `job_service.mark_failed_no_retry()` を呼ぶ。`mark_failed()` は呼ばれず retry_count も変化しない
 
 - **`HelpPlugin` の DI**: `HelpPlugin` は `plugin_loader` をコンストラクタで受け取る。`dependencies.py` の `get_plugin_loader()` で生成したシングルトンを渡せばよい
+
+- **SQLite インメモリ DB を複数接続で共有する**: `sqlite:///:memory:` は接続ごとに独立した DB になるため Integration テストで `no such table` が発生する。`StaticPool` + `connect_args={"check_same_thread": False}` を組み合わせると全接続が同一インメモリ DB を共有できる
+
+  ```python
+  from sqlalchemy.pool import StaticPool
+  engine = create_engine(
+      "sqlite:///:memory:",
+      connect_args={"check_same_thread": False},
+      poolclass=StaticPool,
+  )
+  ```

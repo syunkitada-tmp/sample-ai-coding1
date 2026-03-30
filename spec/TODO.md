@@ -74,7 +74,7 @@
 
 ## P7: オプション（MVP 完成後）
 
-- [ ] Setup: Integration テスト環境構築 (`tests/integration/`)
-  - [ ] Scenario: API レベルの受信〜ジョブ登録 E2E 検証
+- [x] Setup: Integration テスト環境構築 (`tests/integration/`)
+  - [x] Scenario: API レベルの受信〜ジョブ登録 E2E 検証
 - [ ] Setup: Docker Compose 本番向け整備 (`Dockerfile.api` / `Dockerfile.worker`)
-- [ ] Setup: `.env.example` 作成
+- [x] Setup: `.env.example` 作成

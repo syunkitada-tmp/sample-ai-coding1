@@ -2,9 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 実装完了（MVP 完成）
-- **Progress**: 43 / 43 タスク完了（P7 オプション除く）
-- **テスト**: 72 passed / 0 failed
+- **Current Phase**: Phase 6 全タスク完了（MVP + Integration テスト + .env.example）
+- **Progress**: 全 P1–P7 完了（Docker Compose 本番整備のみ任意残存）
+- **テスト**: 78 passed / 0 failed（unit 72 + integration 6）
 
 ## 2. Technical Context
 
@@ -53,10 +53,9 @@ tests/
 
 ## 5. Next Step
 
-- MVP 完成。P7（オプション）に進むか要件・アーキテクチャの見直しを行うかを開発者が判断する。
-  - P7a: `tests/integration/` 構築（API E2E）
-  - P7b: `.env.example` 作成
-  - P7c: Alembic 初回マイグレーション（MySQL 起動後）
+- 全タスク完了。残った任意作業:
+  - Docker Compose 本番向け整備（マルチステージビルド等）
+  - Alembic 初回マイグレーション（MySQL 起動後: `uv run alembic upgrade head`）
 
 ## 6. Pending Issues / Notes
 
