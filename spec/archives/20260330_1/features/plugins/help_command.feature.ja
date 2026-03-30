@@ -1,0 +1,23 @@
+Feature: !help コマンド機能
+  In order to 利用可能なコマンドを確認するために
+  As an オペレーター
+  I want to Slack で "!help" を送信すると登録済みコマンドの一覧をプレーンテキストで受け取る
+
+  Scenario: !help が登録済みコマンドの一覧を返す
+    Given プラグイン "alert" と "deploy" が説明文付きで登録されている
+    When text "!help" を含む POST リクエストが届く
+    Then コマンド "help"、ステータス "pending" のジョブが作成される
+    And ワーカーが help ジョブを実行する
+    And Slack スレッドに全コマンドと説明文を含むプレーンテキストの返信が届く
+
+  Scenario: 返信フォーマットが 1 行につき "!コマンド名: 説明" 形式である
+    Given プラグイン "alert" が説明文 "Analyze alert logs" で登録されている
+    And プラグイン "deploy" が説明文 "Deploy application" で登録されている
+    When help コマンドが実行される
+    Then 返信に "!alert: Analyze alert logs" が含まれる
+    And 返信に "!deploy: Deploy application" が含まれる
+
+  Scenario: プラグインが1件も登録されていない場合に適切なメッセージを返す
+    Given プラグインが1件も登録されていない
+    When help コマンドが実行される
+    Then Slack スレッドにコマンドが存在しない旨の返信が届く

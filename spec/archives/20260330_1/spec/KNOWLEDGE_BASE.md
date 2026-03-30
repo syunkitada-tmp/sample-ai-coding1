@@ -9,39 +9,24 @@
   uv sync --dev
   # テスト実行
   uv run pytest tests/
-  # パッケージ追加（本番依存 / dev 依存）
+  # パッケージ追加
   uv add <package>
   uv add --dev <package>
-  # Alembic マイグレーション（DATABASE_URL または .env が設定されていること）
-  uv run alembic revision --autogenerate -m "description"
+  # Alembic 実行
   uv run alembic upgrade head
   ```
 
-  > **注意**: `httpx` など本番コードで使うパッケージは `[project].dependencies` に入れること。`[dependency-groups].dev` に入れると Docker イメージ（`uv sync --no-dev`）で使えなくなる。
+- **SQLite でのユニットテスト**: `tests/conftest.py` の `db_session` フィクスチャが SQLite インメモリ DB を提供する。MySQL が起動していなくてもモデルのユニットテストは実行可能
 
-- **SQLite でのテスト（ユニット & インテグレーション）**:
-  - ユニットテスト: `tests/conftest.py` の `db_session` フィクスチャが SQLite インメモリ DB を提供。MySQL 不要
-  - インテグレーションテスト: `sqlite:///:memory:` は接続ごとに独立した DB になり `no such table` が発生する。`StaticPool` + `check_same_thread: False` で全接続が同一 DB を共有できる
-
-  ```python
-  from sqlalchemy.pool import StaticPool
-  engine = create_engine(
-      "sqlite:///:memory:",
-      connect_args={"check_same_thread": False},
-      poolclass=StaticPool,
-  )
-  ```
+- **Alembic の `env.py`**: `config.py` の `settings.database_url` を `config.set_main_option()` で注入している。`alembic revision --autogenerate` を実行する前に `DATABASE_URL` 環境変数または `.env` が正しく設定されていること
 
 ## 2. Common Errors & Fixes
 
 - **Error**: `ModuleNotFoundError: No module named 'src'`
   **Fix**: `pyproject.toml` に `pythonpath = ["."]` を設定済み。`uv run pytest` をプロジェクトルートから実行すること
 
-- **Error**: Docker コンテナから MySQL に接続できない (`Can't connect to MySQL server on 'localhost'`)
-  **Fix**: コンテナ間通信はサービス名（`db`）をホスト名として使う。`docker-compose.yml` の各サービスに `environment.DATABASE_URL: mysql+pymysql://root:password@db:3306/chatops` を追記して `.env` の `localhost` 設定を上書きすること
-
-- **Error**: `HelpPlugin.__init__() missing 1 required positional argument: 'plugin_loader'`（plugin_loader の自動スキャン時）
-  **Fix**: `register_from_module` でのインスタンス化時に `TypeError` が出た場合はスキップし、手動登録に委ねる。`api/dependencies.py` と `worker/main.py` の両方で `load_from_dir` 後に `plugin_loader._registry["help"] = HelpPlugin(plugin_loader=plugin_loader)` を追記すること
+- **Error**: `DeprecationWarning: datetime.datetime.utcnow() is deprecated`
+  **Fix**: `datetime.now(UTC).replace(tzinfo=None)` を返す `_utcnow()` ヘルパー関数を使い、`mapped_column(default=_utcnow)` で参照する（callable を渡すことで呼び出しごとに評価される）
 
 ## 3. Implementation Patterns
 
@@ -77,8 +62,21 @@
 
 - **`SELECT FOR UPDATE SKIP LOCKED` の SQLite 互換**: SQLite は SKIP LOCKED を非対応のため例外を投げる。`try/except` で SKIP LOCKED なし版にフォールバックする実装にすることでユニットテストが MySQL なしで通る
 
+- **`mark_failed` のキーワード引数**: `mark_failed(job, reason=...)` のように `reason` をキーワード引数で呼ぶと、テストの `assert_called_once_with(job, "reason")` が失敗する。`assert_called_once_with(job, reason="reason")` と合わせること
+
 - **`Job.args` の Worker 側復元**: `json.loads(job.args)` で `{"kwargs": {...}, "args": [...]}` を取り出し、`plugin.execute(kwargs=..., args=..., thread_context=...)` に渡す
 
 - **`NoRetryError` パターン**: プラグインがリトライ不要の失敗を表現したい場合は `NoRetryError` を raise する。`executor._execute_job()` がこれを捕捉し `job_service.mark_failed_no_retry()` を呼ぶ。`mark_failed()` は呼ばれず retry_count も変化しない
 
-- **コンストラクタ引数が必要なプラグインの登録**: `plugin_loader.load_from_dir()` は引数なしでインスタンス化できるプラグインのみ自動登録する。`HelpPlugin` のように DI が必要なプラグインは `load_from_dir` 後に手動で `_registry` に登録すること（`api/dependencies.py` と `worker/main.py` の両方で行う）
+- **`HelpPlugin` の DI**: `HelpPlugin` は `plugin_loader` をコンストラクタで受け取る。`dependencies.py` の `get_plugin_loader()` で生成したシングルトンを渡せばよい
+
+- **SQLite インメモリ DB を複数接続で共有する**: `sqlite:///:memory:` は接続ごとに独立した DB になるため Integration テストで `no such table` が発生する。`StaticPool` + `connect_args={"check_same_thread": False}` を組み合わせると全接続が同一インメモリ DB を共有できる
+
+  ```python
+  from sqlalchemy.pool import StaticPool
+  engine = create_engine(
+      "sqlite:///:memory:",
+      connect_args={"check_same_thread": False},
+      poolclass=StaticPool,
+  )
+  ```
