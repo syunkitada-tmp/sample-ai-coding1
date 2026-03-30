@@ -93,7 +93,7 @@ uv run pytest
 uv run pytest -v
 ```
 
-78 テスト（ユニット 72 + インテグレーション 6）が含まれます。
+88 テスト（ユニット 82 + インテグレーション 6）が含まれます。
 
 ## プロジェクト構成
 
@@ -104,7 +104,8 @@ src/
 ├── domain/         # ビジネスロジック（ORM モデル・サービス・プラグイン ABC）
 ├── plugins/        # プラグインディレクトリ（ファイル追加で拡張）
 ├── infrastructure/ # DB 接続・Slack クライアント・プラグインローダー
-└── config.py       # pydantic-settings による設定管理
+├── config/         # pydantic-settings による設定管理
+└── lib/            # 全レイヤー共通ユーティリティ（構造化ログ・ trace_id 管理）
 
 migrations/         # Alembic マイグレーションファイル
 features/           # BDD 仕様（.feature ファイル）
@@ -112,6 +113,16 @@ tests/
 ├── unit/           # pytest ユニットテスト
 └── integration/    # pytest + httpx インテグレーションテスト
 ```
+
+## ログ・トレーサビリティ
+
+全ログに出力元ファイル名・行番号と `trace_id` が含まれます。
+
+```
+2026-03-30 10:00:00 INFO [executor.py:82] [trace_id=a1b2c3d4-...] src.worker.executor: ...
+```
+
+`trace_id` は API リクエスト受信時に自動生成され、`jobs` テーブルの `trace_id` カラム経由でワーカープロセスに引き継がれます。同一 `trace_id` でフィルタリングすることで、メッセージ受信からコマンド実行までのフローを串刺し検索できます。
 
 ## 開発ガイド
 

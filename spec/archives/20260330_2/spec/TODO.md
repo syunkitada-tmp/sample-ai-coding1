@@ -1,6 +1,6 @@
 # Implementation Todo List
 
-（タスクなし）
+## 構造化ログ & trace_id 導入
 
 ### 基盤整備（最優先）
 

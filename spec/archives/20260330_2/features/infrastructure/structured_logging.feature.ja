@@ -1,0 +1,34 @@
+Feature: 構造化ログ（出力元箇所とトレース ID）機能
+  In order to 障害調査とリクエストフローの追跡を効率化するために
+  As the システム運用者
+  I want to すべてのログに出力元ファイル名・行番号と、ジョブライフサイクル全体を貫く trace_id が含まれる
+
+  Scenario: ログエントリに出力元ファイル名と行番号が含まれる
+    Given ロギングシステムが設定されている
+    When 任意のログメッセージが出力される
+    Then ログエントリに出力元ファイル名が含まれる
+    And ログエントリに行番号が含まれる
+
+  Scenario: API リクエスト受信時に一意の trace_id が生成される
+    Given メッセージ受信 API が起動している
+    When POST リクエストが届く
+    Then リクエストに対して新しい UUID の trace_id が生成される
+    And リクエスト処理中のすべてのログエントリに trace_id が含まれる
+
+  Scenario: コマンドのジョブ登録時に trace_id がジョブレコードに保存される
+    Given メッセージ受信 API が起動している
+    And プラグイン "alert" が登録されている
+    When text "!alert --host web01" を含む POST リクエストが届く
+    Then 登録されたジョブレコードにリクエストの trace_id が含まれる
+
+  Scenario: ワーカーがジョブレコードの trace_id をロギングコンテキストに復元する
+    Given ワーカーが起動している
+    And trace_id "abc-123" を持つジョブが DB に存在する
+    When ワーカーがそのジョブを取り出す
+    Then ロギングコンテキストに trace_id "abc-123" が設定される
+    And ジョブ実行中のすべてのログエントリに trace_id "abc-123" が含まれる
+
+  Scenario: アクティブなコンテキストがない場合は placeholder を使用する
+    Given ロギングシステムが設定されている
+    When リクエスト・ジョブ処理の外でログメッセージが出力される
+    Then ログエントリの trace_id が "-" になる

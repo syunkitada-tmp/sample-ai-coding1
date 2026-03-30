@@ -2,7 +2,7 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 8 完了（次のイテレーション待ち）
+- **Current Phase**: アーカイブ完了（次の変更待ち）
 - **Progress**: 0 / 0
 
 ## 2. Next Step

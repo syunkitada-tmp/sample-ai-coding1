@@ -164,3 +164,26 @@ class TestMessageService:
             )
         assert db_session.query(Message).count() == 0
         assert db_session.query(Job).count() == 0
+
+    def test_job_stores_trace_id(self, db_session):
+        """ジョブ登録時に get_trace_id() の値が job.trace_id に格納される"""
+        from src.lib.logging import set_trace_id
+        from src.domain.services.message_service import MessageService
+
+        set_trace_id("test-trace-001")
+        svc = MessageService(
+            db=db_session,
+            slack_client=_make_slack_client(),
+            plugin_loader=_make_plugin_loader(["alert"]),
+        )
+        svc.handle(
+            channel_id="C123",
+            thread_ts="111.000",
+            user="U1",
+            text="!alert --host web01",
+            timestamp="111.000",
+        )
+        db_session.flush()
+        job = db_session.query(Job).one()
+        assert job.trace_id == "test-trace-001"
+        set_trace_id(None)  # クリーンアップ

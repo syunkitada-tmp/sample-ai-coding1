@@ -5,6 +5,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import TYPE_CHECKING
 
+from src.lib.logging import set_trace_id
 from src.domain.exceptions import NoRetryError
 from src.domain.models.job import Job
 
@@ -73,25 +74,31 @@ class WorkerExecutor:
 
         プラグインが見つからない場合も失敗として処理する。
         """
-        plugin = self._plugins.get(job.command)
-        if plugin is None:
-            self._job_svc.mark_failed(job, reason=f"plugin '{job.command}' not found")
-            return
-
-        parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": []}
-        kwargs = parsed.get("kwargs", {})
-        args = parsed.get("args", [])
-        ctx = job.thread_context
-
+        set_trace_id(job.trace_id or "-")
         try:
-            result = plugin.execute(kwargs=kwargs, args=args, thread_context=ctx)
-            self._slack.post_message(
-                channel=ctx.get("channel_id", ""),
-                thread_ts=ctx.get("thread_ts"),
-                text=result,
-            )
-            self._job_svc.mark_done(job)
-        except NoRetryError as exc:
-            self._job_svc.mark_failed_no_retry(job, reason=str(exc))
-        except Exception as exc:
-            self._job_svc.mark_failed(job, reason=str(exc))
+            plugin = self._plugins.get(job.command)
+            if plugin is None:
+                self._job_svc.mark_failed(
+                    job, reason=f"plugin '{job.command}' not found"
+                )
+                return
+
+            parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": []}
+            kwargs = parsed.get("kwargs", {})
+            args = parsed.get("args", [])
+            ctx = job.thread_context
+
+            try:
+                result = plugin.execute(kwargs=kwargs, args=args, thread_context=ctx)
+                self._slack.post_message(
+                    channel=ctx.get("channel_id", ""),
+                    thread_ts=ctx.get("thread_ts"),
+                    text=result,
+                )
+                self._job_svc.mark_done(job)
+            except NoRetryError as exc:
+                self._job_svc.mark_failed_no_retry(job, reason=str(exc))
+            except Exception as exc:
+                self._job_svc.mark_failed(job, reason=str(exc))
+        finally:
+            set_trace_id(None)

@@ -9,6 +9,7 @@ import logging
 import time
 
 from src.config import settings
+from src.lib.logging import configure_logging
 from src.infrastructure.db import get_db
 from src.infrastructure.plugin_loader import PluginLoader
 from src.infrastructure.slack_client import SlackClient
@@ -16,10 +17,7 @@ from src.domain.services.job_service import JobService
 from src.plugins.help import HelpPlugin
 from src.worker.executor import WorkerExecutor
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 

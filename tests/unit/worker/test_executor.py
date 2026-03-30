@@ -213,3 +213,37 @@ class TestWorkerExecutor:
         assert job_svc.mark_done.call_count == 3
         # 2回目の claim には limit=2（free_slots）が渡る
         assert job_svc.claim_pending_jobs.call_count == 3
+
+    def test_execute_job_restores_trace_id_to_context(self):
+        """_execute_job 実行後、get_trace_id() がジョブの trace_id と一致する"""
+        from src.lib.logging import get_trace_id, set_trace_id
+        from src.worker.executor import WorkerExecutor
+
+        job = _make_mock_job()
+        job.trace_id = "job-trace-abc"
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = _make_plugin_loader(succeed=True)
+        slack = MagicMock()
+
+        captured = []
+
+        original_execute = plugin_loader.get.return_value.execute
+
+        def capture_trace_id(*args, **kwargs):
+            captured.append(get_trace_id())
+            return "ok"
+
+        plugin_loader.get.return_value.execute = capture_trace_id
+
+        executor = WorkerExecutor(
+            job_service=job_svc,
+            plugin_loader=plugin_loader,
+            slack_client=slack,
+            max_workers=4,
+        )
+        set_trace_id(None)  # 事前にリセット
+        executor.run_once()
+        executor.run_once()
+
+        assert captured == ["job-trace-abc"]
+        set_trace_id(None)  # クリーンアップ

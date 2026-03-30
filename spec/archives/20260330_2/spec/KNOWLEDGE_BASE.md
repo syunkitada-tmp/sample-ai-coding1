@@ -82,9 +82,3 @@
 - **`NoRetryError` パターン**: プラグインがリトライ不要の失敗を表現したい場合は `NoRetryError` を raise する。`executor._execute_job()` がこれを捕捉し `job_service.mark_failed_no_retry()` を呼ぶ。`mark_failed()` は呼ばれず retry_count も変化しない
 
 - **コンストラクタ引数が必要なプラグインの登録**: `plugin_loader.load_from_dir()` は引数なしでインスタンス化できるプラグインのみ自動登録する。`HelpPlugin` のように DI が必要なプラグインは `load_from_dir` 後に手動で `_registry` に登録すること（`api/dependencies.py` と `worker/main.py` の両方で行う）
-
-- **構造化ログ / trace_id 管理**: `src/lib/logging.py` に集約。`configure_logging()` を API・Worker 両プロセスの起動時に呼ぶ。`set_trace_id()` / `get_trace_id()` で ContextVar を操作する。`ThreadPoolExecutor` スレッドでは ContextVar が引き継がれないため、`_execute_job` 冒頭で `set_trace_id(job.trace_id or "-")` を明示的に呼ぶこと
-
-- **`configure_logging()` の箆等性**: 重複呼び出し時に `TraceFilter` を持つ既存ハンドラを除去してから再追加するため、何度呼んでも重複ハンドラが増えない
-
-- **`_execute_job` の trace_id リセット**: `try/finally: set_trace_id(None)` でジョブ完了後に必ずリセットすること。リセットなしだと同スレッドで次のジョブが古い trace_id を引き継く

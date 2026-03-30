@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
+from src.lib.logging import get_trace_id
 from src.domain.exceptions import CommandSyntaxError, MultipleCommandsError
 from src.domain.models.job import Job, JobStatus
 from src.domain.models.message import Message
@@ -90,6 +91,7 @@ class MessageService:
                 args=json.dumps({"kwargs": parsed.kwargs, "args": parsed.args}),
                 thread_context=thread_context,
                 status=JobStatus.pending,
+                trace_id=get_trace_id(),
             )
             self._db.add(job)
 

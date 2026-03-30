@@ -31,6 +31,7 @@ class Job(Base):
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     retry_after: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=_utcnow, nullable=False
     )
