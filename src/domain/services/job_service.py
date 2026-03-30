@@ -113,3 +113,20 @@ class JobService:
                     thread_ts=ctx.get("thread_ts"),
                     text=f"エラー: コマンド `!{job.command}` が {self._max_retry_count} 回失敗しました。理由: {reason}",
                 )
+
+    def mark_failed_no_retry(self, job: Job, reason: str) -> None:
+        """リトライなしで即座に failed にする。
+
+        プラグインが NoRetryError を送出した場合に呼び出される。
+        """
+        job.failure_reason = reason
+        job.status = JobStatus.failed
+        self._db.commit()
+        logger.error("Job %d failed without retry: %s", job.id, reason)
+        if self._slack is not None:
+            ctx = job.thread_context
+            self._slack.post_message(
+                channel=ctx.get("channel_id", ""),
+                thread_ts=ctx.get("thread_ts"),
+                text=f"エラー: `!{job.command}` が失敗しました。{reason}",
+            )

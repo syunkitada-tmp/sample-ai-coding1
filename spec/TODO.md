@@ -63,14 +63,14 @@
 
 ## P6: プラグイン実装
 
-- [ ] Feature: `!help` プラグイン (`src/plugins/help.py`)
-  - [ ] Scenario: Help returns a list of all registered commands
-  - [ ] Scenario: Help reply format is "!command_name: description" per line
-  - [ ] Scenario: Help returns a message when no plugins are registered
-- [ ] Feature: `!alert` ダミープラグイン (`src/plugins/alert.py`)
-  - [ ] Scenario: Successfully execute !alert with required --host option
-  - [ ] Scenario: Execute !alert with --host option and positional arguments
-  - [ ] Scenario: Fail when --host option is missing
+- [x] Feature: `!help` プラグイン (`src/plugins/help.py`)
+  - [x] Scenario: Help returns a list of all registered commands
+  - [x] Scenario: Help reply format is "!command_name: description" per line
+  - [x] Scenario: Help returns a message when no plugins are registered
+- [x] Feature: `!alert` ダミープラグイン (`src/plugins/alert.py`)
+  - [x] Scenario: Successfully execute !alert with required --host option
+  - [x] Scenario: Execute !alert with --host option and positional arguments
+  - [x] Scenario: Fail when --host option is missing
 
 ## P7: オプション（MVP 完成後）
 

@@ -11,3 +11,11 @@ class MultipleCommandsError(CommandParseError):
 
 class CommandSyntaxError(CommandParseError):
     """コマンドの引数構文が不正な場合（引用符の閉じ忘れなど）。"""
+
+
+class NoRetryError(Exception):
+    """プラグインがリトライなし失敗を要求する場合に送出する例外。
+
+    executor はこの例外を受け取ると retry_count を上限値に設定してから
+    mark_failed_no_retry() を呼び出し、リトライキューに戻さない。
+    """

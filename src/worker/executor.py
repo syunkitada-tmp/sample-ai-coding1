@@ -5,6 +5,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import TYPE_CHECKING
 
+from src.domain.exceptions import NoRetryError
 from src.domain.models.job import Job
 
 if TYPE_CHECKING:
@@ -90,5 +91,7 @@ class WorkerExecutor:
                 text=result,
             )
             self._job_svc.mark_done(job)
+        except NoRetryError as exc:
+            self._job_svc.mark_failed_no_retry(job, reason=str(exc))
         except Exception as exc:
             self._job_svc.mark_failed(job, reason=str(exc))

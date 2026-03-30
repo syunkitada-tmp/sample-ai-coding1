@@ -2,9 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 実装中（P5 完了 → P6 着手中）
+- **Current Phase**: Phase 6 実装完了（MVP 完成）
 - **Progress**: 43 / 43 タスク完了（P7 オプション除く）
-- **テスト**: 62 passed / 0 failed
+- **テスト**: 72 passed / 0 failed
 
 ## 2. Technical Context
 
@@ -53,9 +53,10 @@ tests/
 
 ## 5. Next Step
 
-- 次に着手すべきこと: **P6 プラグイン実装**
-  1. `src/plugins/help.py` — `!help` プラグイン
-  2. `src/plugins/alert.py` — `!alert` ダミープラグイン
+- MVP 完成。P7（オプション）に進むか要件・アーキテクチャの見直しを行うかを開発者が判断する。
+  - P7a: `tests/integration/` 構築（API E2E）
+  - P7b: `.env.example` 作成
+  - P7c: Alembic 初回マイグレーション（MySQL 起動後）
 
 ## 6. Pending Issues / Notes
 

@@ -65,3 +65,7 @@
 - **`mark_failed` のキーワード引数**: `mark_failed(job, reason=...)` のように `reason` をキーワード引数で呼ぶと、テストの `assert_called_once_with(job, "reason")` が失敗する。`assert_called_once_with(job, reason="reason")` と合わせること
 
 - **`Job.args` の Worker 側復元**: `json.loads(job.args)` で `{"kwargs": {...}, "args": [...]}` を取り出し、`plugin.execute(kwargs=..., args=..., thread_context=...)` に渡す
+
+- **`NoRetryError` パターン**: プラグインがリトライ不要の失敗を表現したい場合は `NoRetryError` を raise する。`executor._execute_job()` がこれを捕捉し `job_service.mark_failed_no_retry()` を呼ぶ。`mark_failed()` は呼ばれず retry_count も変化しない
+
+- **`HelpPlugin` の DI**: `HelpPlugin` は `plugin_loader` をコンストラクタで受け取る。`dependencies.py` の `get_plugin_loader()` で生成したシングルトンを渡せばよい
