@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
@@ -11,9 +9,6 @@ from src.infrastructure.slack_client import SlackClient
 from src.infrastructure.plugin_loader import PluginLoader
 from src.domain.services.message_service import MessageService
 from src.plugins.help import HelpPlugin
-
-if TYPE_CHECKING:
-    pass
 
 # シングルトンのプラグインローダー（アプリ起動時に一度だけ初期化）
 _plugin_loader = PluginLoader()
