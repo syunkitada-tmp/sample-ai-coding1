@@ -48,7 +48,15 @@ class PluginLoader:
         for attr_name in dir(module):
             cls = getattr(module, attr_name)
             if _is_valid_plugin(cls):
-                instance = cls()
+                try:
+                    instance = cls()
+                except TypeError:
+                    # コンストラクタに必須引数があるプラグインはスキップ（手動登録を想定）
+                    logger.debug(
+                        "Plugin %s requires constructor arguments, skipping auto-registration.",
+                        cls.__name__,
+                    )
+                    continue
                 self._registry[instance.command_name] = instance
                 logger.info("Registered plugin: %s", instance.command_name)
 

@@ -13,6 +13,7 @@ from src.infrastructure.db import get_db
 from src.infrastructure.plugin_loader import PluginLoader
 from src.infrastructure.slack_client import SlackClient
 from src.domain.services.job_service import JobService
+from src.plugins.help import HelpPlugin
 from src.worker.executor import WorkerExecutor
 
 logging.basicConfig(
@@ -27,6 +28,7 @@ def _build_executor() -> WorkerExecutor:
     slack_client = SlackClient(proxy_url=settings.slack_proxy_url)
     plugin_loader = PluginLoader()
     plugin_loader.load_from_dir(settings.plugin_dir)
+    plugin_loader._registry["help"] = HelpPlugin(plugin_loader=plugin_loader)
 
     job_service = JobService(
         db=db,
