@@ -1,0 +1,26 @@
+Feature: メッセージ受信機能
+  In order to Slack からのオペレーターコマンドを処理するために
+  As the ChatOps フレームワーク
+  I want to HTTP エンドポイント経由で受信メッセージを受け付ける
+
+  Scenario: 必須フィールドがすべて揃ったメッセージを正常に受信できる
+    Given メッセージ受信 API が起動している
+    When channel_id "C123"、thread_ts "1234567890.000100"、user "U456"、text "Hello"、timestamp "1234567890.000100" を含む POST リクエストが届く
+    Then API は HTTP 200 を返す
+
+  Scenario Outline: 必須フィールドが欠けたリクエストを拒否する
+    Given メッセージ受信 API が起動している
+    When "<field>" フィールドが欠けた POST リクエストが届く
+    Then API は HTTP 400 を返す
+
+    Examples:
+      | field      |
+      | channel_id |
+      | user       |
+      | text       |
+      | timestamp  |
+
+  Scenario: 空ボディのリクエストを拒否する
+    Given メッセージ受信 API が起動している
+    When 空ボディで POST リクエストが届く
+    Then API は HTTP 400 を返す

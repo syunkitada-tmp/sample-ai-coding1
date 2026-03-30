@@ -17,14 +17,19 @@ agent: "agent"
 
 ### Step 1: 技術選定
 
-言語、フレームワーク、データベース、テストツール（Cucumber/Gherkin を実行できるもの）を選定し、**選定理由とともに提案**してください。
+言語、フレームワーク、データベースを選定し、**選定理由とともに提案**してください。
 開発者の技術的な好みや制約があれば確認してください。
+
+**テストツールの方針**:
+
+- **必須**: 各言語標準の unittest フレームワーク（例: Python の `unittest` / `pytest`、Node.js の `node:test` / `vitest` など）を使用すること
+- **オプショナル**: E2E テストは必須ではない。導入する場合は Phase 5 のタスク計画で優先度を下げて扱うこと
 
 ### Step 2: 構成案の提示
 
 あなたが考える最適な構成を提案し、開発者と以下の観点で議論してください：
 
-- **Testability**: Gherkin 仕様に基づき、自動テスト（E2E/Integration）が容易な構成か
+- **Testability**: unittest で各モジュールを検証しやすい構成か（E2E はオプショナル）
 - **Maintainability**: コードの凝集度が高く、疎結合な設計（クリーンアーキテクチャやドメイン駆動設計の考え方）か
 - **Scalability**: 将来的な機能追加（v2 以降）に耐えられる構成か
 
@@ -41,8 +46,8 @@ agent: "agent"
 
 - **Language**: [例: TypeScript]
 - **Frontend/Backend**: [例: Next.js (App Router)]
-- **Database**: [例: Prisma + PostgreSQL]
-- **Test Framework**: [例: Playwright + Cucumber.js]
+- **Database**: [例: Prisma + MySQL]
+- **Test Framework**: [必須] unittest フレームワーク / [オプション] E2E フレームワーク
 - **Others**: [認証, UI ライブラリ等]
 
 ## 2. Directory Structure

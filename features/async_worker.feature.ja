@@ -1,0 +1,37 @@
+Feature: 非同期コマンド実行ワーカー機能
+  In order to メッセージ受信 API をブロックせずにコマンドを実行するために
+  As the ChatOps フレームワーク
+  I want to ワーカープロセスが DB をポーリングし、pending ジョブを並行実行する
+
+  Scenario: ワーカーが pending ジョブを取り出して正常実行する
+    Given ワーカーが起動している
+    And ステータス "pending"、コマンド "alert" のジョブが DB に存在する
+    When ワーカーが DB をポーリングする
+    Then ジョブのステータスが "processing" に変わる
+    And "alert" のコマンドプラグインが実行される
+    And ジョブのステータスが "done" に変わる
+    And 実行結果がプロキシ API 経由で Slack スレッドに返信される
+
+  Scenario: 既に processing 状態のジョブは再取得しない
+    Given ワーカーが起動している
+    And ステータス "processing" のジョブが DB に存在する
+    When ワーカーが DB をポーリングする
+    Then そのジョブは再取得されない
+
+  Scenario: ワーカーが複数の pending ジョブを並行実行する
+    Given 最大並行数 3 でワーカーが起動している
+    And ステータス "pending" のジョブが DB に 3 件存在する
+    When ワーカーが DB をポーリングする
+    Then 3 件のジョブが別スレッドで並行実行される
+
+  Scenario: ワーカーが設定された並行数の上限を遵守する
+    Given 最大並行数 2 でワーカーが起動している
+    And ステータス "pending" のジョブが DB に 5 件存在する
+    When ワーカーが DB をポーリングする
+    Then 1 回のポーリングサイクルで取得されるジョブは最大 2 件である
+
+  Scenario: ワーカーが設定されたポーリング間隔で再ポーリングする
+    Given ポーリング間隔 5 秒でワーカーが起動している
+    And pending ジョブが DB に存在しない
+    When 5 秒が経過する
+    Then ワーカーが再度 DB をポーリングする
