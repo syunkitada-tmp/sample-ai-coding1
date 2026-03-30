@@ -2,16 +2,16 @@
 
 ## P1: 基盤構築（全タスクの前提）
 
-- [ ] Setup: プロジェクト初期化 (`pyproject.toml` / `requirements.txt`)
-- [ ] Setup: Docker Compose 構成 (API / Worker / MySQL)
-- [ ] Setup: pydantic-settings による `config.py` 実装 (`database_url`, `worker_polling_interval`, `worker_max_concurrency`, `worker_max_retry_count`, `slack_proxy_url`, `plugin_dir`)
-- [ ] Setup: Alembic 初期化 (`migrations/` ディレクトリ・`env.py`)
-- [ ] Setup: SQLAlchemy エンジン・セッションファクトリ (`src/infrastructure/db.py`)
-- [ ] Setup: ORM モデル実装
-  - [ ] `src/domain/models/message.py` (messages テーブル)
-  - [ ] `src/domain/models/job.py` (jobs テーブル: status / retry_count / retry_after / args / thread_context)
-- [ ] Setup: Alembic マイグレーション初回作成・適用
-- [ ] Setup: pytest 環境構築 (`tests/` ディレクトリ・`conftest.py`)
+- [x] Setup: プロジェクト初期化 (`pyproject.toml` / `requirements.txt`)
+- [x] Setup: Docker Compose 構成 (API / Worker / MySQL)
+- [x] Setup: pydantic-settings による `config.py` 実装 (`database_url`, `worker_polling_interval`, `worker_max_concurrency`, `worker_max_retry_count`, `slack_proxy_url`, `plugin_dir`)
+- [x] Setup: Alembic 初期化 (`migrations/` ディレクトリ・`env.py`)
+- [x] Setup: SQLAlchemy エンジン・セッションファクトリ (`src/infrastructure/db.py`)
+- [x] Setup: ORM モデル実装
+  - [x] `src/domain/models/message.py` (messages テーブル)
+  - [x] `src/domain/models/job.py` (jobs テーブル: status / retry_count / retry_after / args / thread_context)
+- [ ] Setup: Alembic マイグレーション初回作成・適用（MySQL 起動時に実施）
+- [x] Setup: pytest 環境構築 (`tests/` ディレクトリ・`conftest.py`)
 
 ## P2: コアロジック（技術リスクの早期検証）
 

@@ -2,8 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 5 完了 → Phase 6 へ
-- **Progress**: 0 / 43 タスク
+- **Current Phase**: Phase 6 実装中（P1 完了 → P2 着手中）
+- **Progress**: 7 / 43 タスク完了
+- **テスト**: 8 passed / 0 failed
 
 ## 2. Technical Context
 
@@ -19,17 +20,17 @@
 
 ## 3. Technology Stack
 
-| 項目 | 採用 |
-|---|---|
-| 言語 | Python 3.12 |
-| HTTP API | FastAPI |
-| ORM / Migration | SQLAlchemy 2.x + Alembic |
-| DB | MySQL 8.0 |
-| Worker | `concurrent.futures.ThreadPoolExecutor` |
-| 設定管理 | pydantic-settings (`BaseSettings`) / `.env` |
-| テスト（必須） | pytest |
-| テスト（オプション） | pytest + httpx（Integration） |
-| コンテナ | Docker Compose |
+| 項目                 | 採用                                        |
+| -------------------- | ------------------------------------------- |
+| 言語                 | Python 3.12                                 |
+| HTTP API             | FastAPI                                     |
+| ORM / Migration      | SQLAlchemy 2.x + Alembic                    |
+| DB                   | MySQL 8.0                                   |
+| Worker               | `concurrent.futures.ThreadPoolExecutor`     |
+| 設定管理             | pydantic-settings (`BaseSettings`) / `.env` |
+| テスト（必須）       | pytest                                      |
+| テスト（オプション） | pytest + httpx（Integration）               |
+| コンテナ             | Docker Compose                              |
 
 ## 4. Directory Layout
 
@@ -52,11 +53,10 @@ tests/
 
 ## 5. Next Step
 
-- 次に着手すべきこと: **P1 基盤構築**
-  1. `requirements.txt` / `pyproject.toml` 作成
-  2. `config.py` (pydantic-settings) 実装
-  3. `src/infrastructure/db.py` + ORM モデル実装
-  4. Alembic 初期化・初回マイグレーション作成
+- 次に着手すべきこと: **P2 コアロジック**
+  1. `BasePlugin` ABC (`src/domain/interfaces/plugin.py`)
+  2. コマンドパーサー (`src/domain/services/command_parser.py`)
+  3. プラグインローダー (`src/infrastructure/plugin_loader.py`)
 
 ## 6. Pending Issues / Notes
 
