@@ -44,22 +44,22 @@
 
 ## P4: 非同期ワーカー
 
-- [ ] Feature: ジョブサービス (`src/domain/services/job_service.py`)
-  - [ ] Scenario: Worker picks up a pending job and executes it successfully
-  - [ ] Scenario: Worker does not pick up a job that is already processing
-  - [ ] Scenario: Worker respects the configured concurrency limit
-- [ ] Feature: ワーカー本体 (`src/worker/executor.py`, `src/worker/main.py`)
-  - [ ] Scenario: Worker executes multiple pending jobs concurrently
-  - [ ] Scenario: Worker polls again after the configured interval
+- [x] Feature: ジョブサービス (`src/domain/services/job_service.py`)
+  - [x] Scenario: Worker picks up a pending job and executes it successfully
+  - [x] Scenario: Worker does not pick up a job that is already processing
+  - [x] Scenario: Worker respects the configured concurrency limit
+- [x] Feature: ワーカー本体 (`src/worker/executor.py`, `src/worker/main.py`)
+  - [x] Scenario: Worker executes multiple pending jobs concurrently
+  - [x] Scenario: Worker polls again after the configured interval
 
 ## P5: リトライ機構
 
-- [ ] Feature: リトライ制御 (`src/domain/services/job_service.py` 拡張)
-  - [ ] Scenario: Failed job is scheduled for retry within the limit
-  - [ ] Scenario: Failed job is not picked up before retry_after
-  - [ ] Scenario: Failed job is picked up after retry_after has passed
-  - [ ] Scenario: Job exceeding the retry limit is marked as failed and notified
-  - [ ] Scenario Outline: Retry count boundary behaviour
+- [x] Feature: リトライ制御 (`src/domain/services/job_service.py` 拡張)
+  - [x] Scenario: Failed job is scheduled for retry within the limit
+  - [x] Scenario: Failed job is not picked up before retry_after
+  - [x] Scenario: Failed job is picked up after retry_after has passed
+  - [x] Scenario: Job exceeding the retry limit is marked as failed and notified
+  - [x] Scenario Outline: Retry count boundary behaviour
 
 ## P6: プラグイン実装
 

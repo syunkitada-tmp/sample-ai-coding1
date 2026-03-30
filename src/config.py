@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     worker_polling_interval: int = 5
     worker_max_concurrency: int = 4
     worker_max_retry_count: int = 3
+    worker_retry_delay_seconds: int = 60
     plugin_dir: str = "src/plugins"
 
 

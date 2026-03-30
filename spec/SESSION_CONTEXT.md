@@ -2,9 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 実装中（P3 完了 → P4 着手中）
-- **Progress**: 29 / 43 タスク完了
-- **テスト**: 48 passed / 0 failed
+- **Current Phase**: Phase 6 実装中（P5 完了 → P6 着手中）
+- **Progress**: 43 / 43 タスク完了（P7 オプション除く）
+- **テスト**: 62 passed / 0 failed
 
 ## 2. Technical Context
 
@@ -53,10 +53,9 @@ tests/
 
 ## 5. Next Step
 
-- 次に着手すべきこと: **P4 非同期ワーカー**
-  1. `src/domain/services/job_service.py` — pending ジョブ取得 (SELECT FOR UPDATE SKIP LOCKED)・ステータス更新
-  2. `src/worker/executor.py` — ThreadPoolExecutor ループ
-  3. `src/worker/main.py` — ポーリングエントリポイント
+- 次に着手すべきこと: **P6 プラグイン実装**
+  1. `src/plugins/help.py` — `!help` プラグイン
+  2. `src/plugins/alert.py` — `!alert` ダミープラグイン
 
 ## 6. Pending Issues / Notes
 

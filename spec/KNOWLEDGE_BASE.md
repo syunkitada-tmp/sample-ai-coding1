@@ -60,4 +60,8 @@
 
 - **FastAPI テスト用 DI オーバーライド**: `app.dependency_overrides[get_xxx] = lambda: mock` でサービスをモックに差し替えられる。`create_app()` ファクトリ関数を用意して TestClient に渡すとテストごとに独立したアプリインスタンスを取得できる
 
-- **`Job.args` の格納形式**: kwargs と位置引数を `json.dumps({"kwargs": parsed.kwargs, "args": parsed.args})` として Text カラムに保存。Worker 側は `json.loads(job.args)` で復元する
+- **`SELECT FOR UPDATE SKIP LOCKED` の SQLite 互換**: SQLite は SKIP LOCKED を非対応のため例外を投げる。`try/except` で SKIP LOCKED なし版にフォールバックする実装にすることでユニットテストが MySQL なしで通る
+
+- **`mark_failed` のキーワード引数**: `mark_failed(job, reason=...)` のように `reason` をキーワード引数で呼ぶと、テストの `assert_called_once_with(job, "reason")` が失敗する。`assert_called_once_with(job, reason="reason")` と合わせること
+
+- **`Job.args` の Worker 側復元**: `json.loads(job.args)` で `{"kwargs": {...}, "args": [...]}` を取り出し、`plugin.execute(kwargs=..., args=..., thread_context=...)` に渡す
