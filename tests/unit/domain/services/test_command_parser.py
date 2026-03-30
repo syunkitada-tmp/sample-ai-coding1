@@ -1,4 +1,5 @@
 import pytest
+from src.domain.exceptions import MultipleCommandsError
 from src.domain.services.command_parser import parse_command, ParsedCommand
 
 
@@ -52,12 +53,12 @@ def test_parse_plain_text_with_exclamation_not_at_start():
 
 
 def test_parse_multiple_commands_raises():
-    with pytest.raises(ValueError, match="multiple commands"):
+    with pytest.raises(MultipleCommandsError, match="multiple commands"):
         parse_command("!alert --host web01\n!help")
 
 
 def test_parse_multiple_commands_on_same_line_raises():
-    with pytest.raises(ValueError, match="multiple commands"):
+    with pytest.raises(MultipleCommandsError, match="multiple commands"):
         parse_command("!alert --host web01 !help")
 
 

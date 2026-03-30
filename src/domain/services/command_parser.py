@@ -4,6 +4,8 @@ import re
 import shlex
 from dataclasses import dataclass, field
 
+from src.domain.exceptions import CommandSyntaxError, MultipleCommandsError
+
 
 @dataclass
 class ParsedCommand:
@@ -58,7 +60,8 @@ def parse_command(text: str) -> ParsedCommand | None:
         None: コマンドが含まれない場合
 
     Raises:
-        ValueError: コマンドが複数含まれる場合
+        MultipleCommandsError: コマンドが複数含まれる場合
+        CommandSyntaxError: 引数の構文が不正な場合
     """
     if not text or not text.strip():
         return None
@@ -69,7 +72,7 @@ def parse_command(text: str) -> ParsedCommand | None:
     if len(matches) == 0:
         return None
     if len(matches) > 1:
-        raise ValueError(f"multiple commands detected: {matches}")
+        raise MultipleCommandsError(f"multiple commands detected: {matches}")
 
     full_match = command_pattern.search(text)
     command_name = matches[0].lower()
@@ -78,7 +81,7 @@ def parse_command(text: str) -> ParsedCommand | None:
     try:
         tokens = shlex.split(rest)
     except ValueError as exc:
-        raise ValueError(f"failed to parse command arguments: {exc}") from exc
+        raise CommandSyntaxError(f"failed to parse command arguments: {exc}") from exc
 
     kwargs, args = _parse_tokens(tokens)
     return ParsedCommand(name=command_name, kwargs=kwargs, args=args)

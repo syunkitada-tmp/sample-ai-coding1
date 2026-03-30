@@ -45,3 +45,19 @@
       def execute(self, args, thread_context):
           return "ok"
   ```
+
+- **トランザクションのロールバック**: `session.commit()` が例外を投げたとき、`session.add()` 済みオブジェクトはセッションのアイデンティティマップ上に残る。後続の `session.query(...).count()` が autoflush で DB に書き込んでしまうため、commit 失敗時には必ず `session.rollback()` を呼ぶこと
+
+  ```python
+  try:
+      self._db.commit()
+  except Exception:
+      self._db.rollback()
+      raise
+  ```
+
+- **respx による httpx モック**: `uv add --dev respx` で導入。`respx_mock` フィクスチャを pytest 引数に追加するだけで使用可能（pytest プラグインとして自動登録）
+
+- **FastAPI テスト用 DI オーバーライド**: `app.dependency_overrides[get_xxx] = lambda: mock` でサービスをモックに差し替えられる。`create_app()` ファクトリ関数を用意して TestClient に渡すとテストごとに独立したアプリインスタンスを取得できる
+
+- **`Job.args` の格納形式**: kwargs と位置引数を `json.dumps({"kwargs": parsed.kwargs, "args": parsed.args})` として Text カラムに保存。Worker 側は `json.loads(job.args)` で復元する

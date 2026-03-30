@@ -2,9 +2,9 @@
 
 ## 1. Current Status
 
-- **Current Phase**: Phase 6 実装中（P2 完了 → P3 着手中）
-- **Progress**: 19 / 43 タスク完了
-- **テスト**: 24 passed / 0 failed
+- **Current Phase**: Phase 6 実装中（P3 完了 → P4 着手中）
+- **Progress**: 29 / 43 タスク完了
+- **テスト**: 48 passed / 0 failed
 
 ## 2. Technical Context
 
@@ -53,11 +53,10 @@ tests/
 
 ## 5. Next Step
 
-- 次に着手すべきこと: **P3 メッセージ受信 API + 永続化・ジョブ登録**
-  1. `src/infrastructure/slack_client.py`
-  2. `src/domain/services/message_service.py`
-  3. `src/api/routers/messages.py`
-  4. `src/api/main.py`
+- 次に着手すべきこと: **P4 非同期ワーカー**
+  1. `src/domain/services/job_service.py` — pending ジョブ取得 (SELECT FOR UPDATE SKIP LOCKED)・ステータス更新
+  2. `src/worker/executor.py` — ThreadPoolExecutor ループ
+  3. `src/worker/main.py` — ポーリングエントリポイント
 
 ## 6. Pending Issues / Notes
 

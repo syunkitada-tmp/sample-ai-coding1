@@ -29,18 +29,18 @@
 
 ## P3: メッセージ受信 API + 永続化・ジョブ登録
 
-- [ ] Feature: Slack 投稿プロキシクライアント (`src/infrastructure/slack_client.py`)
-- [ ] Feature: メッセージサービス (`src/domain/services/message_service.py`)
-  - [ ] Scenario: Persist a plain message without a command
-  - [ ] Scenario: Persist a message and enqueue a job for a valid command
-  - [ ] Scenario: Reject a message containing multiple commands
-  - [ ] Scenario: Reject a message with an unknown command
-  - [ ] Scenario: Message save and job registration succeed or fail atomically
-- [ ] Feature: メッセージ受信 API (`src/api/routers/messages.py`)
-  - [ ] Scenario: Successfully receive a message with all required fields
-  - [ ] Scenario Outline: Reject a request with a missing required field
-  - [ ] Scenario: Reject a request with an empty body
-- [ ] Feature: FastAPI アプリ起動 (`src/api/main.py`, `src/api/dependencies.py`)
+- [x] Feature: Slack 投稿プロキシクライアント (`src/infrastructure/slack_client.py`)
+- [x] Feature: メッセージサービス (`src/domain/services/message_service.py`)
+  - [x] Scenario: Persist a plain message without a command
+  - [x] Scenario: Persist a message and enqueue a job for a valid command
+  - [x] Scenario: Reject a message containing multiple commands
+  - [x] Scenario: Reject a message with an unknown command
+  - [x] Scenario: Message save and job registration succeed or fail atomically
+- [x] Feature: メッセージ受信 API (`src/api/routers/messages.py`)
+  - [x] Scenario: Successfully receive a message with all required fields
+  - [x] Scenario Outline: Reject a request with a missing required field
+  - [x] Scenario: Reject a request with an empty body
+- [x] Feature: FastAPI アプリ起動 (`src/api/main.py`, `src/api/dependencies.py`)
 
 ## P4: 非同期ワーカー
 
