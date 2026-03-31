@@ -1,0 +1,18 @@
+Feature: Slack プロキシ デバッグサーバー
+  In order to 実際の Slack プロキシなしでコマンド実行結果を確認するために
+  As the 開発者
+  I want to 受信ペイロードを標準出力に印字して ok を返すデバッグ用スタブサーバーを使いたい
+
+  Scenario: POST /post でペイロードが標準出力に印字され ok が返る
+    Given デバッグプロキシサーバーが起動している
+    When channel "C12345678"、text "Hello, world!"、thread_ts "1234567890.000000" を含む JSON ボディで "/post" に POST リクエストを送信する
+    Then レスポンスのステータスが 200 である
+    And レスポンスボディが {"ok": true} である
+    And ペイロードが標準出力に印字される
+
+  Scenario: thread_ts なしの POST /post も成功する
+    Given デバッグプロキシサーバーが起動している
+    When channel "C12345678"、text "Hello, world!" を含み thread_ts を含まない JSON ボディで "/post" に POST リクエストを送信する
+    Then レスポンスのステータスが 200 である
+    And レスポンスボディが {"ok": true} である
+    And ペイロードが標準出力に印字される

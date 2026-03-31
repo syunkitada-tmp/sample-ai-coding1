@@ -21,8 +21,21 @@ agent: "agent"
 - `spec/TODO.md`（完了タスクの確認）
 - `git status`（変更ファイルの一覧）
 - `git diff --stat`（変更の規模感）
+- `git branch --show-current`（現在のブランチ）
 
 ## Process
+
+### Step 0: ブランチの確認
+
+`git branch --show-current` で現在のブランチを確認してください。
+
+**`main` や `master` 等のデフォルトブランチにいる場合**、作業用ブランチを作成してから進めてください：
+
+1. ブランチ名を提案する。命名規則: `<type>/<短い説明>`（例: `feat/add-timeout-to-alert`, `fix/retry-count-off-by-one`, `refactor/extract-config-module`）
+2. 開発者の承認を得る
+3. `git checkout -b <ブランチ名>` で作成・切り替え
+
+**作業用ブランチに既にいる場合**は、そのまま Step 1 に進んでください。
 
 ### Step 1: 変更ファイルの分類
 

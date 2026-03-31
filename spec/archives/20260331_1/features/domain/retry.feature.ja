@@ -1,0 +1,43 @@
+Feature: ジョブリトライ機構
+  In order to 一時的なコマンド失敗から回復するために
+  As the ChatOps フレームワーク
+  I want to 設定された上限まで失敗したジョブを自動リトライする
+
+  Scenario: リトライ上限内で失敗したジョブをリトライ予約する
+    Given 最大リトライ回数 3 でワーカーが起動している
+    And ステータス "processing"、retry_count 0 のジョブが存在する
+    When コマンド実行が失敗する
+    Then ジョブのステータスが "pending" に戻される
+    And retry_count が 1 に加算される
+    And 失敗理由がジョブレコードに記録される
+    And retry_after に将来のタイムスタンプが設定される
+
+  Scenario: retry_after 前のジョブは取得されない
+    Given ステータス "pending" で retry_after が未来のジョブが存在する
+    When ワーカーが DB をポーリングする
+    Then そのジョブは取得されない
+
+  Scenario: retry_after 経過後のジョブは取得される
+    Given ステータス "pending" で retry_after が過去のジョブが存在する
+    When ワーカーが DB をポーリングする
+    Then そのジョブが取得されて実行される
+
+  Scenario: リトライ上限を超えたジョブを failed にして通知する
+    Given 最大リトライ回数 3 でワーカーが起動している
+    And ステータス "processing"、retry_count 3 のジョブが存在する
+    When コマンド実行が失敗する
+    Then ジョブのステータスが "failed" に設定される
+    And Slack スレッドに最終失敗通知が投稿される
+    And これ以上リトライは行われない
+
+  Scenario Outline: リトライ回数境界値の動作
+    Given 最大リトライ回数 3 でワーカーが起動している
+    And ステータス "processing"、retry_count <count> のジョブが存在する
+    When コマンド実行が失敗する
+    Then ジョブの結果は "<outcome>" になる
+
+    Examples:
+      | count | outcome            |
+      | 0     | retried            |
+      | 2     | retried            |
+      | 3     | permanently failed |

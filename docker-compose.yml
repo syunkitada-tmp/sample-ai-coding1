@@ -32,6 +32,16 @@ services:
       - chatops_net
     restart: "no"
 
+  slack_proxy_debug:
+    build:
+      context: .
+      dockerfile: Dockerfile.slack_proxy_debug
+    ports:
+      - "8081:8081"
+    networks:
+      - chatops_net
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -39,6 +49,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: mysql+pymysql://root:password@db:3306/chatops
+      SLACK_PROXY_URL: http://slack_proxy_debug:8081/post
     ports:
       - "8000:8000"
     depends_on:
@@ -46,6 +57,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      slack_proxy_debug:
+        condition: service_started
     networks:
       - chatops_net
     restart: unless-stopped
@@ -57,11 +70,14 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: mysql+pymysql://root:password@db:3306/chatops
+      SLACK_PROXY_URL: http://slack_proxy_debug:8081/post
     depends_on:
       db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      slack_proxy_debug:
+        condition: service_started
     networks:
       - chatops_net
     restart: unless-stopped
