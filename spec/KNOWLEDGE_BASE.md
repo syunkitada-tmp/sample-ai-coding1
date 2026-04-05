@@ -40,38 +40,28 @@
 - **Error**: Docker コンテナから MySQL に接続できない (`Can't connect to MySQL server on 'localhost'`)
   **Fix**: コンテナ間通信はサービス名（`db`）をホスト名として使う。`docker-compose.yml` の各サービスに `environment.DATABASE_URL: mysql+pymysql://root:password@db:3306/chatops` を追記して `.env` の `localhost` 設定を上書きすること
 
-## 3. Implementation Patterns
+## 3. Implementation Standards
 
-- **ORM モデルの `default`**: `datetime.now(UTC)` は `default=_utcnow`（callable）として渡す。`default=datetime.now(UTC)` だとモジュール読み込み時の値が固定されてしまうため注意
+### シェルコマンドプラグインの実行仕様
+シェルコマンド（`chatops-*`）の実行と結果判定は以下のルールに従う。
 
-- **設定の DI**: `src/infrastructure/db.py` のエンジンは `@lru_cache` で遅延初期化。テスト時は `conftest.py` が独自セッションを提供するため DB 接続は発生しない
+1. **引数の復元**: `Job.args` (JSON) から `kwargs` と `args` を取り出し、シェルコマンドのオプション（`--key value`）と位置引数に再構築して `subprocess.run` に渡す。
+2. **エラー判定 (`NoRetryError`)**: ユーザー起票のエラー（リトライ不要）は、標準出力の JSON 内に `error` キーを含め、exit code >= 1 とすることで表現する。`WorkerExecutor` はこの出力を検知して `mark_failed_no_retry()` を呼ぶ。
+3. **出力パース**:
+   - JSON 出力内の `result` または `message` キーを優先的に Slack 返信に利用する。
+   - JSON 以外、または該当キーがない場合は、標準出力の全テキストをそのまま返信する。
+   - 実行タイムアウト、または実行ファイル未踏の場合は `WorkerExecutor` 側で例外を捕捉し、適切に失敗処理を行う。
 
+### 構造化ログとトレーサビリティ
+全コンポーネントで一貫したログ出力と `trace_id` の追跡を行う。
 
+1. **初期化**: API・Worker ともに、プロセス起動時に `configure_logging()` を一度だけ呼び出し、ログハンドラをセットアップする。
+2. **`trace_id` の伝搬**: `set_trace_id()` / `get_trace_id()` (ContextVar) を使用する。
+   - **重要**: `ThreadPoolExecutor` の別スレッドでは ContextVar が自動で引き継がれない。そのため、`WorkerExecutor._execute_job` の冒頭で `set_trace_id(job.trace_id or "-")` を明示的に呼ぶ必要がある。
+3. **リセットの徹底**: `_execute_job` では `try/finally` ブロックを用いて、完了時に必ず `set_trace_id(None)` を呼び出し、スレッドのコンテキストをクリーンに保つ。
 
-- **トランザクションのロールバック**: `session.commit()` が例外を投げたとき、`session.add()` 済みオブジェクトはセッションのアイデンティティマップ上に残る。後続の `session.query(...).count()` が autoflush で DB に書き込んでしまうため、commit 失敗時には必ず `session.rollback()` を呼ぶこと
+### DB トランザクション
+MySQL および SQLite (SKIP LOCKED 非対応) の両方で動作を保証する。
 
-  ```python
-  try:
-      self._db.commit()
-  except Exception:
-      self._db.rollback()
-      raise
-  ```
-
-- **respx による httpx モック**: `uv add --dev respx` で導入。`respx_mock` フィクスチャを pytest 引数に追加するだけで使用可能（pytest プラグインとして自動登録）
-
-- **FastAPI テスト用 DI オーバーライド**: `app.dependency_overrides[get_xxx] = lambda: mock` でサービスをモックに差し替えられる。`create_app()` ファクトリ関数を用意して TestClient に渡すとテストごとに独立したアプリインスタンスを取得できる
-
-- **`SELECT FOR UPDATE SKIP LOCKED` の SQLite 互換**: SQLite は SKIP LOCKED を非対応のため例外を投げる。`try/except` で SKIP LOCKED なし版にフォールバックする実装にすることでユニットテストが MySQL なしで通る
-
-- **`Job.args` の Worker 側復元とシェルコマンド起動**: `json.loads(job.args)` で `{"kwargs": {...}, "args": "..."}` を取り出し、シェルコマンドの引数（`--key value` および位置引数）として再構築して `subprocess.run` に渡す。
-
-- **`NoRetryError` パターン**: プラグインがリトライ不要のユーザー指定エラーを表現したい場合は、JSON標準出力の `error` キー（例: `{"error": "ホスト名が不正です"}`）を含めて exit >= 1 を返す。`executor` がこれを `NoRetryError` に落とし込無事で `mark_failed_no_retry()` が呼ばれる。
-
-- **シェルコマンドの出力パース**: JSON出力の `result` または `message` キーがあればその値をSlackメッセージに用いる。JSON以外の場合は生の標準出力をそのまま返信する。
-
-- **構造化ログ / trace_id 管理**: `src/lib/logging.py` に集約。`configure_logging()` を API・Worker 両プロセスの起動時に呼ぶ。`set_trace_id()` / `get_trace_id()` で ContextVar を操作する。`ThreadPoolExecutor` スレッドでは ContextVar が引き継がれないため、`_execute_job` 冒頭で `set_trace_id(job.trace_id or "-")` を明示的に呼ぶこと
-
-- **`configure_logging()` の箆等性**: 重複呼び出し時に `TraceFilter` を持つ既存ハンドラを除去してから再追加するため、何度呼んでも重複ハンドラが増えない
-
-- **`_execute_job` の trace_id リセット**: `try/finally: set_trace_id(None)` でジョブ完了後に必ずリセットすること。リセットなしだと同スレッドで次のジョブが古い trace_id を引き継く
+1. **ロールバック**: `session.commit()` 失敗時は必ず `session.rollback()` を呼ぶ（アイデンティティマップ上の不整合を防ぐため）。
+2. **SKIP LOCKED 互換**: SQLite は `SKIP LOCKED` をサポートしないため、例外捕捉時にフォールバック実装を用いることでユニットテストを MySQL なしで継続可能にする。

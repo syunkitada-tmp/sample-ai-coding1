@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 from src.domain.models.base import Base
 from src.domain.models.message import Message
 from src.domain.models.job import Job, JobStatus
+from src.domain.interfaces.plugin import CommandRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -39,12 +40,10 @@ def integration_client():
     SessionLocal = sessionmaker(bind=engine)
 
     # プラグインローダー
-    from src.plugins.alert import AlertPlugin
-    from src.plugins.help import HelpPlugin
-
     loader = PluginLoader()
-    loader._registry["alert"] = AlertPlugin()
-    loader._registry["help"] = HelpPlugin(plugin_loader=loader)
+    # 統合テスト用にシェルコマンドを手動登録
+    loader.register_command(CommandRegistry("alert", "/bin/echo", "アラート送信"))
+    loader.register_command(CommandRegistry("help", "/bin/echo", "ヘルプ"))
 
     # SlackClient はモック
     mock_slack = MagicMock()

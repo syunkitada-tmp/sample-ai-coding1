@@ -40,7 +40,7 @@ chatops/
 │   │   │   ├── job_service.py        # ジョブ取り出し・ステータス更新・リトライ制御
 │   │   │   └── command_parser.py     # コマンド構文解析（!cmd --opt arg）
 │   │   └── interfaces/
-│   │       └── plugin.py             # プラグインインターフェース定義（ABC）
+│   │       └── plugin.py             # プラグイン（CommandRegistry）定義
 │   │
 │   ├── config/                       # 設定管理
 │   │   ├── __init__.py               # settings をエクスポート（from src.config import settings）

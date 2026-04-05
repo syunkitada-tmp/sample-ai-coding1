@@ -94,7 +94,7 @@ uv run pytest
 uv run pytest -v
 ```
 
-88 テスト（ユニット 82 + インテグレーション 6）が含まれます。
+99 テスト（ユニット 93 + インテグレーション 6）が含まれます。
 
 ## プロジェクト構成
 
@@ -102,9 +102,8 @@ uv run pytest -v
 src/
 ├── api/            # FastAPI — POST /messages エンドポイント
 ├── worker/         # ポーリングループ & ThreadPoolExecutor
-├── domain/         # ビジネスロジック（ORM モデル・サービス・プラグイン ABC）
+├── domain/         # ビジネスロジック（ORM モデル・サービス・インターフェース定義）
 ├── cmds/           # ビルトインで提供されるシェルコマンドプラグイン（Pythonパッケージ形式）
-├── plugins/        # 旧仕様のプラグインディレクトリ（非推奨）
 ├── infrastructure/ # DB 接続・Slack クライアント・プラグインローダー
 ├── config/         # pydantic-settings による設定管理
 └── lib/            # 全レイヤー共通ユーティリティ（構造化ログ・ trace_id 管理）
@@ -169,7 +168,6 @@ pyproject.toml の記述例:
 chatops-mycommand = "cmds.mycommand.main:main"
 ```
 
-※ 移行期間措置として、旧仕様の Python クラスベースのプラグイン (`src/plugins/` 配下) も引き続きサポートされますが、新規作成時はシェルコマンド方式を推奨します。
 
 ### 設定値
 

@@ -94,10 +94,7 @@ class WorkerExecutor:
             ctx = job.thread_context
 
             try:
-                if isinstance(plugin, CommandRegistry):
-                    result = self._execute_shell(plugin, kwargs, args)
-                else:
-                    result = plugin.execute(kwargs=kwargs, args=args, thread_context=ctx)
+                result = self._execute_shell(plugin, kwargs, args)
 
                 self._slack.post_message(
                     channel=ctx.get("channel_id", ""),
