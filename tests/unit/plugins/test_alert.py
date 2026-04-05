@@ -16,7 +16,7 @@ class TestAlertPlugin:
         plugin = AlertPlugin()
         result = plugin.execute(
             kwargs={"host": "web01"},
-            args=[],
+            args="",
             thread_context=_ctx(),
         )
         assert "web01" in result
@@ -28,7 +28,7 @@ class TestAlertPlugin:
         plugin = AlertPlugin()
         result = plugin.execute(
             kwargs={"host": "web01"},
-            args=["app01"],
+            args="app01",
             thread_context=_ctx(),
         )
         assert "web01" in result
@@ -43,7 +43,7 @@ class TestAlertPlugin:
         with pytest.raises(NoRetryError, match="--host"):
             plugin.execute(
                 kwargs={},
-                args=["app01"],
+                args="app01",
                 thread_context=_ctx(),
             )
 
@@ -68,7 +68,7 @@ class TestExecutorNoRetryHandling:
         job = MagicMock()
         job.id = 1
         job.command = "alert"
-        job.args = json.dumps({"kwargs": {}, "args": ["app01"]})
+        job.args = json.dumps({"kwargs": {}, "args": "app01"})
         job.thread_context = _ctx()
 
         plugin = MagicMock()

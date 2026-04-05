@@ -12,7 +12,7 @@ def _utcnow():
 def _make_job(db_session, status=JobStatus.pending, retry_count=0, retry_after=None):
     job = Job(
         command="alert",
-        args=json.dumps({"kwargs": {"host": "web01"}, "args": []}),
+        args=json.dumps({"kwargs": {"host": "web01"}, "args": ""}),
         thread_context={"channel_id": "C1", "thread_ts": "111.000", "user": "U1"},
         status=status,
         retry_count=retry_count,

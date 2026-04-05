@@ -143,7 +143,7 @@ class MyPlugin(BasePlugin):
     def execute(
         self,
         kwargs: dict[str, str | bool],
-        args: list[str],
+        args: str,
         thread_context: dict,
     ) -> str:
         # 実行ロジックを実装して結果文字列を返す

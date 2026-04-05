@@ -20,7 +20,7 @@ class HelpPlugin(BasePlugin):
     def execute(
         self,
         kwargs: dict[str, str | bool],
-        args: list[str],
+        args: str,
         thread_context: dict,
     ) -> str:
         commands = self._loader.list_commands()

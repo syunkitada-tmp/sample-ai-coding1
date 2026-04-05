@@ -11,17 +11,17 @@ from src.domain.exceptions import CommandSyntaxError, MultipleCommandsError
 class ParsedCommand:
     name: str
     kwargs: dict[str, str | bool] = field(default_factory=dict)
-    args: list[str] = field(default_factory=list)
+    args: str = ""
 
 
-def _parse_tokens(tokens: list[str]) -> tuple[dict[str, str | bool], list[str]]:
+def _parse_tokens(tokens: list[str]) -> tuple[dict[str, str | bool], str]:
     """shlex 分割済みトークン列を kwargs と位置引数に分類する。
 
     対応形式:
       --key value   -> kwargs["key"] = "value"
       --key=value   -> kwargs["key"] = "value"
       --flag        -> kwargs["flag"] = True  (次トークンがオプションでない場合)
-      positional    -> args[]
+      positional    -> args（スペース区切りの文字列）
     """
     kwargs: dict[str, str | bool] = {}
     args: list[str] = []
@@ -46,7 +46,7 @@ def _parse_tokens(tokens: list[str]) -> tuple[dict[str, str | bool], list[str]]:
         else:
             args.append(token)
             i += 1
-    return kwargs, args
+    return kwargs, " ".join(args)
 
 
 def parse_command(text: str) -> ParsedCommand | None:

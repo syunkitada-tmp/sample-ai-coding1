@@ -88,3 +88,26 @@
 - **`configure_logging()` の箆等性**: 重複呼び出し時に `TraceFilter` を持つ既存ハンドラを除去してから再追加するため、何度呼んでも重複ハンドラが増えない
 
 - **`_execute_job` の trace_id リセット**: `try/finally: set_trace_id(None)` でジョブ完了後に必ずリセットすること。リセットなしだと同スレッドで次のジョブが古い trace_id を引き継く
+
+## 4. Phase 5 Lessons: Interface & Implementation Type Changes
+
+- **インターフェース型変更の全体波及**: `BasePlugin.execute()` のシグネチャ（特に `args` パラメータ型）を変更する場合、以下が全てを更新する必要がある：
+  1. インターフェース定義（`src/domain/interfaces/plugin.py`）
+  2. 全プラグイン実装（`src/plugins/*.py`）
+  3. プラグイン呼び出し側（`src/worker/executor.py` など）
+  4. テストの期待値とモック（`tests/unit/plugins/*.py`）
+  5. JSON シリアライズ/デシリアライズの対応（`src/domain/services/message_service.py`、`src/worker/executor.py`）
+
+  型変更時は単なる find-replace ではなく、**意味的な変換** （例: `list[str]` から `str` への結合）が伴う場合は特に注意が必要
+
+- **JSON フォーマット互換性**: JSON に保存されるデータ型を変更する場合（例: `"args": []` → `"args": ""`）：
+  - デフォルト値の設定を JSON 復元時に明示する（`parsed.get("args", "")` など）
+  - 既存レコードとの互換性に注意（新フォーマットのみ対応でよいか確認）
+- **テストの機械的修正範囲**: `args: list[str]` → `args: str` への修正は機械的に行える：
+  - リスト期待値 `["token1", "token2"]` → 文字列 `"token1 token2"`
+  - 空リスト `[]` → 空文字列 `""`
+  - ただし、**処理ロジックの変更** （例: `' '.join(args)` → `args` 直接使用）は手動での理解が必要
+
+- **テスト実行の重要性**: 型変更後は **必ず全テストを実行** して動作確認を行うこと。
+  - Phase 5 では 88/88 テスト PASS で、修正の完全性を確認できた
+  - 手動レビューだけでは見落としやすいため、テスト実行が最終的な保険になる

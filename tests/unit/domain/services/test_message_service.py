@@ -75,7 +75,7 @@ class TestMessageService:
         assert job.status == JobStatus.pending
         parsed = json.loads(job.args)
         assert parsed["kwargs"] == {"host": "web01"}
-        assert parsed["args"] == []
+        assert parsed["args"] == ""
 
     def test_job_contains_thread_context(self, db_session):
         """ジョブレコードにスレッドコンテキストが格納される"""

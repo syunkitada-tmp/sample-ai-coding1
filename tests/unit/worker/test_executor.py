@@ -45,7 +45,7 @@ def _make_mock_job(job_id=1, command="alert", retry_count=0):
     job = MagicMock(spec=Job)
     job.id = job_id
     job.command = command
-    job.args = json.dumps({"kwargs": {"host": "web01"}, "args": []})
+    job.args = json.dumps({"kwargs": {"host": "web01"}, "args": ""})
     job.thread_context = {"channel_id": "C1", "thread_ts": "111.000", "user": "U1"}
     job.status = JobStatus.processing
     job.retry_count = retry_count

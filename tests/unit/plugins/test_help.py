@@ -27,7 +27,7 @@ class TestHelpPlugin:
 
         loader = _make_loader({"alert": "Analyze alert logs", "deploy": "Deploy app"})
         plugin = HelpPlugin(plugin_loader=loader)
-        result = plugin.execute(kwargs={}, args=[], thread_context={})
+        result = plugin.execute(kwargs={}, args="", thread_context={})
         assert "!alert: Analyze alert logs" in result
         assert "!deploy: Deploy app" in result
 
@@ -37,7 +37,7 @@ class TestHelpPlugin:
 
         loader = _make_loader({"alert": "Analyze alert logs", "deploy": "Deploy app"})
         plugin = HelpPlugin(plugin_loader=loader)
-        result = plugin.execute(kwargs={}, args=[], thread_context={})
+        result = plugin.execute(kwargs={}, args="", thread_context={})
         lines = result.strip().splitlines()
         assert len(lines) == 2
 
@@ -47,7 +47,7 @@ class TestHelpPlugin:
 
         loader = _make_loader({})
         plugin = HelpPlugin(plugin_loader=loader)
-        result = plugin.execute(kwargs={}, args=[], thread_context={})
+        result = plugin.execute(kwargs={}, args="", thread_context={})
         assert "利用可能なコマンドはありません" in result
 
     def test_command_name_and_description(self):

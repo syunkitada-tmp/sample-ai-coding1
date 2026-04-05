@@ -9,6 +9,6 @@ class BasePlugin(ABC):
     def execute(
         self,
         kwargs: dict[str, str | bool],
-        args: list[str],
+        args: str,
         thread_context: dict,
     ) -> str: ...

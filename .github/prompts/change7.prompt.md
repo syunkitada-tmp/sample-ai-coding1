@@ -27,14 +27,26 @@ agent: "agent"
 - `YYYYMMDD` は実行日（例: `20260330`）
 - `_N` は同日の連番（`_1` から開始、同日に既存アーカイブがあれば次の番号）
 
-### Step 2: ファイルのコピー
+### Step 2: ファイルのコピーと移動
 
 以下のファイルをアーカイブディレクトリにコピーしてください（元ファイルは削除しない）：
 
 ```
 spec/archives/[YYYYMMDD_N]/
-  features/          ← features/ ディレクトリ全体のコピー
-  spec/              ← spec/ 配下のファイル（archives/ ディレクトリを除く）
+  spec/              ← spec/ 配下のファイル（以下を除く）
+    - ARCH_DESIGN.md
+    - KNOWLEDGE_BASE.md
+    - REQUIREMENTS.md
+```
+
+以下のファイルはアーカイブディレクトリに**移動**してください（元ファイルを削除）：
+
+```
+spec/archives/[YYYYMMDD_N]/
+  spec/
+    PROPOSAL.md
+    SESSION_CONTEXT.md
+    TODO.md
 ```
 
 ### Step 3: ARCHIVE_SUMMARY.md の作成
@@ -60,9 +72,9 @@ spec/archives/[YYYYMMDD_N]/
 - [アーカイブに含まれるファイル一覧]
 ```
 
-内容は `spec/PROPOSAL.md`、`spec/TODO.md`、`spec/SESSION_CONTEXT.md` から自動生成してください。
+内容は `spec/TODO.md` から自動生成し、参考情報として PROPOSAL.md と SESSION_CONTEXT.md（両方ともアーカイブに移動済み）の内容も活用してください。
 
-### Step 4: KNOWLEDGE_BASE.md のリファクタリング
+### Step 5: KNOWLEDGE_BASE.md のリファクタリング（続き）
 
 `spec/KNOWLEDGE_BASE.md` はアーカイブせず、次のセッションに引き継ぎます。
 ただし、以下の観点でリファクタリングし、**開発者に変更内容を提示して承認を得てください**：
@@ -72,59 +84,19 @@ spec/archives/[YYYYMMDD_N]/
 - 古くなった情報を削除
 - プロジェクト全体に適用される重要なパターンは残す
 
-### Step 5: PROPOSAL.md の処理
-
-`spec/PROPOSAL.md` はアーカイブにコピー済みなので、削除してください。
-（次の変更サイクルで新しい PROPOSAL.md を作成するため）
-
-### Step 6: TODO.md のクリーンアップ
-
-完了タスク（`[x]`）を全て削除し、未着手・進行中のタスクのみ残してください。
-全タスクが完了している場合は、空のテンプレートにリセットしてください：
-
-```markdown
-# Implementation Todo List
-
-（タスクなし）
-```
-
-### Step 7: SESSION_CONTEXT.md のリセット
-
-SESSION_CONTEXT.md を以下の最小テンプレートにリセットしてください：
-
-```markdown
-# Session Context (Last Updated: YYYY-MM-DD)
-
-## 1. Current Status
-
-- **Current Phase**: アーカイブ完了（次の変更待ち）
-- **Progress**: 0 / 0
-
-## 2. Next Step
-
-- 次に着手すべきこと: [未定]
-
-## 3. Pending Issues / Notes
-
-- [なし]
-```
-
-### Step 8: 最終確認
+### Step 6: 最終確認
 
 アーカイブとクリーンアップの結果を開発者に報告してください：
 
 - アーカイブ先のパスとファイル数
 - KNOWLEDGE_BASE.md のリファクタリング内容
-- クリーンアップ後の各ファイルの状態
 
 ## 完了条件
 
 - `spec/archives/[YYYYMMDD_N]` にファイルがアーカイブされていること
 - `ARCHIVE_SUMMARY.md` がアーカイブ内に作成されていること
 - `KNOWLEDGE_BASE.md` がリファクタリングされ、開発者の承認を得ていること
-- `spec/PROPOSAL.md` が削除されていること
-- `TODO.md` から完了タスクが削除されていること
-- `SESSION_CONTEXT.md` が最小テンプレートにリセットされていること
+- `spec/PROPOSAL.md`、`SESSION_CONTEXT.md`、`TODO.md` がアーカイブに移動されていること
 
 ## フェーズ完了後
 

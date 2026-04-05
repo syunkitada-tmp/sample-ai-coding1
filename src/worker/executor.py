@@ -83,9 +83,9 @@ class WorkerExecutor:
                 )
                 return
 
-            parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": []}
+            parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": ""}
             kwargs = parsed.get("kwargs", {})
-            args = parsed.get("args", [])
+            args = parsed.get("args", "")
             ctx = job.thread_context
 
             try:

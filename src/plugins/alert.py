@@ -17,7 +17,7 @@ class AlertPlugin(BasePlugin):
     def execute(
         self,
         kwargs: dict[str, str | bool],
-        args: list[str],
+        args: str,
         thread_context: dict,
     ) -> str:
         host = kwargs.get("host")
@@ -26,7 +26,7 @@ class AlertPlugin(BasePlugin):
 
         parts = [f"alert executed: host={host}"]
         if args:
-            parts.append(f"args={' '.join(args)}")
+            parts.append(f"args={args}")
         parts.append(
             f"channel={thread_context.get('channel_id')} "
             f"thread={thread_context.get('thread_ts')}"
