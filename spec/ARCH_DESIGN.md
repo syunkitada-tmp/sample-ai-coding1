@@ -72,22 +72,23 @@ chatops/
 │   ├── versions/
 │   └── alembic.ini
 │
-├── features/                         # BDD 仕様（src/ 構成に対応）
-│   ├── api/
-│   │   ├── receive_message.feature
-│   │   └── receive_message.feature.ja
-│   ├── domain/
-│   │   ├── persist_and_enqueue.feature(.ja)
-│   │   ├── retry.feature(.ja)
-│   │   └── plugin_extension.feature(.ja)
-│   ├── worker/
-│   │   ├── async_worker.feature
-│   │   └── async_worker.feature.ja
-│   ├── plugins/
+├── features/                         # BDD 仕様
+│   ├── src/                          # src/ 構成に対応
+│   │   ├── api/
+│   │   │   ├── receive_message.feature
+│   │   │   └── receive_message.feature.ja
+│   │   ├── domain/
+│   │   │   ├── persist_and_enqueue.feature(.ja)
+│   │   │   ├── retry.feature(.ja)
+│   │   │   └── plugin_extension.feature(.ja)
+│   │   ├── worker/
+│   │   │   ├── async_worker.feature
+│   │   │   └── async_worker.feature.ja
+│   │   └── infrastructure/
+│   │       └── structured_logging.feature(.ja)
+│   ├── cmds/                         # cmds/ 構成（プラグインコマンド）に対応
 │   │   ├── help_command.feature(.ja)
 │   │   └── dummy_alert_command.feature(.ja)
-│   ├── infrastructure/
-│   │   └── structured_logging.feature(.ja)
 │   └── tools/
 │       └── slack_proxy_debug.feature(.ja)
 │
