@@ -1,0 +1,1 @@
+"""chatops-alert command package."""

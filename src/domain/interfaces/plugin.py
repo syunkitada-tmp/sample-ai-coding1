@@ -1,14 +1,8 @@
-from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 
-class BasePlugin(ABC):
+@dataclass(frozen=True)
+class CommandRegistry:
     command_name: str
+    executable_path: str
     description: str
-
-    @abstractmethod
-    def execute(
-        self,
-        kwargs: dict[str, str | bool],
-        args: list[str],
-        thread_context: dict,
-    ) -> str: ...

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
+import shlex
+import subprocess
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import TYPE_CHECKING
 
 from src.lib.logging import set_trace_id
 from src.domain.exceptions import NoRetryError
+from src.domain.interfaces.plugin import CommandRegistry
 from src.domain.models.job import Job
 
 if TYPE_CHECKING:
@@ -32,11 +35,13 @@ class WorkerExecutor:
         plugin_loader: PluginLoader,
         slack_client: SlackClient,
         max_workers: int,
+        command_timeout: int,
     ) -> None:
         self._job_svc = job_service
         self._plugins = plugin_loader
         self._slack = slack_client
         self._max_workers = max_workers
+        self._command_timeout = command_timeout
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
         self._active: set[Future] = set()
 
@@ -83,13 +88,14 @@ class WorkerExecutor:
                 )
                 return
 
-            parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": []}
+            parsed = json.loads(job.args) if job.args else {"kwargs": {}, "args": ""}
             kwargs = parsed.get("kwargs", {})
-            args = parsed.get("args", [])
+            args = parsed.get("args", "")
             ctx = job.thread_context
 
             try:
-                result = plugin.execute(kwargs=kwargs, args=args, thread_context=ctx)
+                result = self._execute_shell(plugin, kwargs, args)
+
                 self._slack.post_message(
                     channel=ctx.get("channel_id", ""),
                     thread_ts=ctx.get("thread_ts"),
@@ -102,3 +108,43 @@ class WorkerExecutor:
                 self._job_svc.mark_failed(job, reason=str(exc))
         finally:
             set_trace_id(None)
+
+    def _execute_shell(self, plugin: CommandRegistry, kwargs: dict, args_str: str) -> str:
+        cmd = [plugin.executable_path]
+        for k, v in kwargs.items():
+            if isinstance(v, bool):
+                if v:
+                    cmd.append(f"--{k}")
+            else:
+                cmd.extend([f"--{k}", str(v)])
+        if args_str:
+            cmd.extend(shlex.split(args_str))
+
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=self._command_timeout
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise Exception(f"Command timed out after {self._command_timeout}s") from exc
+        except FileNotFoundError as exc:
+            raise NoRetryError(f"Command not found: {plugin.executable_path}") from exc
+
+        if result.returncode != 0:
+            if result.stdout.strip():
+                try:
+                    data = json.loads(result.stdout)
+                    if "error" in data:
+                        raise NoRetryError(data["error"])
+                except json.JSONDecodeError:
+                    pass
+            raise Exception(f"Command failed (exit {result.returncode}): {result.stderr or result.stdout}")
+
+        if not result.stdout.strip():
+            return "Command executed successfully (no output)."
+
+        try:
+            data = json.loads(result.stdout)
+            return data.get("result", data.get("message", result.stdout))
+        except json.JSONDecodeError:
+            return result.stdout.strip()
+

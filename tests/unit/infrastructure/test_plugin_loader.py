@@ -1,6 +1,3 @@
-import importlib
-import sys
-import types
 import pytest
 
 
@@ -11,94 +8,68 @@ def loader():
     return PluginLoader()
 
 
-def _make_plugin_module(name, command_name, description):
-    """テスト用のインメモリプラグインモジュールを生成する"""
-    from src.domain.interfaces.plugin import BasePlugin
-
-    class DummyPlugin(BasePlugin):
-        def execute(self, kwargs, args, thread_context):
-            return "ok"
-
-    DummyPlugin.command_name = command_name
-    DummyPlugin.description = description
-
-    mod = types.ModuleType(name)
-    mod.DummyPlugin = DummyPlugin
-    return mod
-
-
-def test_register_and_get_plugin(loader):
-    mod = _make_plugin_module("plugins.alert", "alert", "Alert command")
-    loader.register_from_module(mod)
-    plugin = loader.get("alert")
-    assert plugin is not None
-    assert plugin.command_name == "alert"
-
-
 def test_get_unknown_plugin_returns_none(loader):
     assert loader.get("unknown") is None
 
 
-def test_list_all_commands(loader):
-    mod1 = _make_plugin_module("plugins.alert", "alert", "Alert")
-    mod2 = _make_plugin_module("plugins.help", "help", "Help")
-    loader.register_from_module(mod1)
-    loader.register_from_module(mod2)
+def test_load_from_path_registers_chatops_commands(loader, tmp_path, monkeypatch):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    alert_file = bin_dir / "chatops-alert"
+    help_file = bin_dir / "chatops-help"
+    alert_file.write_text("#!/bin/sh\necho OK\n")
+    help_file.write_text("#!/bin/sh\necho OK\n")
+    alert_file.chmod(0o755)
+    help_file.chmod(0o755)
+
+    monkeypatch.setenv("PATH", str(bin_dir))
+
+    loader.load_from_path()
+
+    alert_command = loader.get("alert")
+    help_command = loader.get("help")
+
+    assert alert_command is not None
+    assert help_command is not None
+    assert alert_command.command_name == "alert"
+    assert help_command.command_name == "help"
+    assert alert_command.executable_path.endswith("chatops-alert")
+    assert help_command.executable_path.endswith("chatops-help")
     commands = loader.list_commands()
-    assert "alert" in commands
-    assert "help" in commands
+    assert commands["alert"] == "No description available"
+    assert commands["help"] == "No description available"
 
 
-def test_plugin_missing_command_name_is_skipped(loader, caplog):
-    from src.domain.interfaces.plugin import BasePlugin
+def test_load_from_path_skips_non_executable_files(loader, tmp_path, monkeypatch):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    non_exec = bin_dir / "chatops-alert"
+    non_exec.write_text("echo OK\n")
+    non_exec.chmod(0o644)
 
-    class BadPlugin(BasePlugin):
-        description = "no command_name"
+    monkeypatch.setenv("PATH", str(bin_dir))
 
-        def execute(self, kwargs, args, thread_context):
-            return "ok"
+    loader.load_from_path()
 
-    mod = types.ModuleType("plugins.bad")
-    mod.BadPlugin = BadPlugin
-    loader.register_from_module(mod)
-    assert loader.get("") is None
-    assert len(loader.list_commands()) == 0
+    assert loader.get("alert") is None
 
 
-def test_plugin_missing_description_is_skipped(loader, caplog):
-    from src.domain.interfaces.plugin import BasePlugin
+def test_reload_clears_and_reloads_from_path(loader, tmp_path, monkeypatch):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    alert_file = bin_dir / "chatops-alert"
+    alert_file.write_text("#!/bin/sh\necho OK\n")
+    alert_file.chmod(0o755)
 
-    class BadPlugin(BasePlugin):
-        command_name = "bad"
+    monkeypatch.setenv("PATH", str(bin_dir))
 
-        def execute(self, kwargs, args, thread_context):
-            return "ok"
-
-    mod = types.ModuleType("plugins.bad2")
-    mod.BadPlugin = BadPlugin
-    loader.register_from_module(mod)
-    assert loader.get("bad") is None
-
-
-def test_plugin_missing_execute_is_skipped(loader):
-    from src.domain.interfaces.plugin import BasePlugin
-
-    class BadPlugin(BasePlugin):
-        command_name = "bad"
-        description = "missing execute"
-
-    mod = types.ModuleType("plugins.bad3")
-    mod.BadPlugin = BadPlugin
-    loader.register_from_module(mod)
-    assert loader.get("bad") is None
-
-
-def test_reload_removes_unregistered_plugin(loader, tmp_path):
-    """プラグインファイルを削除して reload すると消えることを確認"""
-    mod = _make_plugin_module("plugins.alert", "alert", "Alert")
-    loader.register_from_module(mod)
+    loader.load_from_path()
     assert loader.get("alert") is not None
 
-    # plugin_dir からリロード（空ディレクトリ = プラグインなし）
-    loader.reload(str(tmp_path))
+    # PATHを変更してリロード
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+    monkeypatch.setenv("PATH", str(empty_dir))
+    loader.reload()
+
     assert loader.get("alert") is None

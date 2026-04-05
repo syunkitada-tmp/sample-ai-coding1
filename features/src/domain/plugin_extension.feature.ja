@@ -1,0 +1,29 @@
+Feature: プラグイン形式のコマンド拡張機能（Python パッケージ形式）
+  In order to フレームワーク本体を改修せずに新コマンドを追加するために
+  As a 開発者
+  I want to Python コマンドパッケージをビルド・インストールして、chatops-* 実行可能ファイルとして PATH から利用可能にする
+
+  Scenario: フレームワークが PATH に配置された chatops-* 実行可能ファイルを自動検出する
+    Given フレームワークが起動している
+    And Python パッケージ "cmds/deploy/" が main.py を持つビルド・インストールされて "chatops-deploy" として PATH に登録されている
+    When フレームワークが PATH から chatops-* 実行可能ファイルをスキャンしてプラグインを読み込む
+    Then コマンド "deploy" が実行可能になる
+
+  Scenario: 実行権限を持たないファイルはロード時に拒否される
+    Given フレームワークが起動している
+    And "chatops-invalid" というファイルが実行権限なしで存在する
+    When フレームワークがプラグインを読み込む
+    Then そのファイルはコマンドとして登録されない
+    And 実行権限がないことを示すエラーがログに出力される
+
+  Scenario: パッケージをアンインストールするとリロード後にそのコマンドが使えなくなる
+    Given "chatops-deploy" 実行可能ファイル（cmds/deploy/ パッケージから生成）でコマンド "deploy" が登録されている
+    When パッケージをアンインストールして（PATH から chatops-deploy が削除され）フレームワークがプラグインをリロードする
+    Then コマンド "deploy" は利用できなくなる
+
+  Scenario: chatops- プレフィックスのみが認識されるコマンド名として扱われる
+    Given フレームワークが起動している
+    And "other-command" という名前の実行可能なファイル（chatops- プレフィックスなし）が PATH に存在する
+    When フレームワークがプラグインを読み込む
+    Then "other-command" はコマンドとして登録されない
+    And chatops- プレフィックスの実行可能ファイルのみが認識される

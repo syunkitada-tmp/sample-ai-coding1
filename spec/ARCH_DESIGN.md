@@ -40,12 +40,7 @@ chatops/
 │   │   │   ├── job_service.py        # ジョブ取り出し・ステータス更新・リトライ制御
 │   │   │   └── command_parser.py     # コマンド構文解析（!cmd --opt arg）
 │   │   └── interfaces/
-│   │       └── plugin.py             # プラグインインターフェース定義（ABC）
-│   │
-│   ├── plugins/                      # プラグインディレクトリ（ファイル追加のみで拡張可能）
-│   │   ├── __init__.py
-│   │   ├── alert.py                  # ダミーコマンド !alert（リファレンス実装）
-│   │   └── help.py                   # ビルトイン !help コマンド
+│   │       └── plugin.py             # プラグイン（CommandRegistry）定義
 │   │
 │   ├── config/                       # 設定管理
 │   │   ├── __init__.py               # settings をエクスポート（from src.config import settings）
@@ -54,8 +49,20 @@ chatops/
 │   │   └── logging.py                # ロギング設定・trace_id 管理（configure_logging / set_trace_id / get_trace_id）
 │   └── infrastructure/
 │       ├── db.py                     # SQLAlchemy エンジン・セッションファクトリ
-│       ├── plugin_loader.py          # plugins/ を自動スキャン・登録
+│       ├── plugin_loader.py          # cmds/ を自動スキャン、chatops-* 実行可能コマンド検出・登録
 │       └── slack_client.py           # Slack 投稿プロキシ API 呼び出し
+│
+├── cmds/                            # プラグインコマンド（Python パッケージベース、subprocess で実行）
+│   ├── __init__.py
+│   ├── alert/                       # ダミーコマンド !alert（Python パッケージ）
+│   │   ├── __init__.py
+│   │   └── main.py                  # エントリポイント（ビルド時に chatops-alert として PATH に配置）
+│   ├── help/                        # ビルトイン !help コマンド（Python パッケージ）
+│   │   ├── __init__.py
+│   │   └── main.py                  # エントリポイント（ビルド時に chatops-help として PATH に配置）
+│   └── lib/                         # 全コマンド共通のユーティリティライブラリ
+│       ├── __init__.py
+│       └── utils.py                 # 共有関数（例: 引数パース、JSON出力など）
 │
 ├── tools/
 │   └── slack_proxy_debug.py          # Slack プロキシ デバッグサーバー（開発用スタブ、標準ライブラリのみ）
@@ -65,22 +72,23 @@ chatops/
 │   ├── versions/
 │   └── alembic.ini
 │
-├── features/                         # BDD 仕様（src/ 構成に対応）
-│   ├── api/
-│   │   ├── receive_message.feature
-│   │   └── receive_message.feature.ja
-│   ├── domain/
-│   │   ├── persist_and_enqueue.feature(.ja)
-│   │   ├── retry.feature(.ja)
-│   │   └── plugin_extension.feature(.ja)
-│   ├── worker/
-│   │   ├── async_worker.feature
-│   │   └── async_worker.feature.ja
-│   ├── plugins/
+├── features/                         # BDD 仕様
+│   ├── src/                          # src/ 構成に対応
+│   │   ├── api/
+│   │   │   ├── receive_message.feature
+│   │   │   └── receive_message.feature.ja
+│   │   ├── domain/
+│   │   │   ├── persist_and_enqueue.feature(.ja)
+│   │   │   ├── retry.feature(.ja)
+│   │   │   └── plugin_extension.feature(.ja)
+│   │   ├── worker/
+│   │   │   ├── async_worker.feature
+│   │   │   └── async_worker.feature.ja
+│   │   └── infrastructure/
+│   │       └── structured_logging.feature(.ja)
+│   ├── cmds/                         # cmds/ 構成（プラグインコマンド）に対応
 │   │   ├── help_command.feature(.ja)
 │   │   └── dummy_alert_command.feature(.ja)
-│   ├── infrastructure/
-│   │   └── structured_logging.feature(.ja)
 │   └── tools/
 │       └── slack_proxy_debug.feature(.ja)
 │
@@ -96,9 +104,11 @@ chatops/
 │   │   │       ├── test_command_parser.py
 │   │   │       ├── test_message_service.py
 │   │   │       └── test_job_service.py
-│   │   ├── plugins/
+│   │   ├── cmds/
 │   │   │   ├── test_alert.py
-│   │   │   └── test_help.py
+│   │   │   ├── test_help.py
+│   │   │   └── lib/
+│   │   │       └── test_utils.py
 │   │   ├── infrastructure/
 │   │   │   └── test_plugin_loader.py
 │   │   └── lib/
@@ -133,7 +143,8 @@ class Settings(BaseSettings):
     worker_max_concurrency: int = 4
     worker_max_retry_count: int = 3
     slack_proxy_url: str
-    plugin_dir: str = "src/plugins"
+    plugin_command_timeout: int = 30       # shellコマンドタイムアウト（秒）
+    plugin_command_path: str | None = None # chatops-* コマンドを検索する PATH（オプション、デフォルトは $PATH）
 
     class Config:
         env_file = ".env"
@@ -161,30 +172,89 @@ settings = Settings()
 
 ### エラーハンドリングの共通ルール
 
-- **コマンド実行失敗**: `job_service` がキャッチし、`retry_count` を加算・`retry_after` を設定して `pending` に戻す
+- **コマンド実行失敗（exit code != 0）**: 一時的エラーとみなし、`job_service` がキャッチして `retry_count` を加算・`retry_after` を設定して `pending` に戻す
+- **コマンドタイムアウト**: 一時的エラーとみなし、`retry_count` を加算・`retry_after` を設定して `pending` に戻す
+- **JSON パースエラー（出力がJSON形式と判定されたがパースに失敗）**: ユーザーエラー（プラグインの出力仕様ミス）とみなし、`retry_count` を加算せずに即座にステータスを `failed` に確定し、Slack スレッドにエラー内容を通知
 - **リトライ上限超過**: ステータスを `failed` に確定し、Slack スレッドへ最終失敗通知を投稿する
-- **プラグインロード失敗**: 起動時にログ出力し、該当プラグインのみスキップして続行する
+- **プラグインロード失敗（ファイルが見つからない、実行権限がないなど）**: 起動時にログ出力し、該当プラグインのみスキップして続行する
 - **API バリデーションエラー**: FastAPI の Pydantic バリデーションにより自動で HTTP 400 を返す
 - **コマンド検出エラー（複数コマンド / 未知コマンド）**: `message_service` 内で検出し、ジョブ登録は行わず API 層から `slack_client` を直接呼び出してエラー通知を Slack スレッドへ投稿する
-- **プラグイン引数バリデーションエラー**: プラグインの `execute` が `ValueError` 等を送出した場合は一時障害とみなさず、`retry_count` を加算せずに即座にステータスを `failed` に確定し、Slack スレッドにエラー内容を通知する
 
-### プラグイン設計指針
+### プラグイン設計指針（Python パッケージベース、shell コマンド実行）
 
-`src/domain/interfaces/plugin.py` に定義した ABC（抽象基底クラス）に従う。
-必須フィールドは `command_name: str`、`description: str`、`execute(args, thread_context) -> str` の3つ。
+プラグインは `cmds/` ディレクトリに Python パッケージとして実装される。
+ビルド時に各パッケージの `main.py` が `chatops-xxx` 形式の実行可能ファイルとして PATH に配置される。
 
-```python
-# src/domain/interfaces/plugin.py（例）
-from abc import ABC, abstractmethod
+**ディレクトリ構成例**:
 
-class BasePlugin(ABC):
-    command_name: str
-    description: str
-
-    @abstractmethod
-    def execute(self, args: list[str], thread_context: dict) -> str:
-        ...
+```
+cmds/
+├── __init__.py
+├── alert/
+│   ├── __init__.py
+│   └── main.py              # エントリポイント（sys.argv または 環境変数で引数を受け取る）
+├── help/
+│   ├── __init__.py
+│   └── main.py
+└── lib/
+    ├── __init__.py
+    └── utils.py             # 共有ユーティリティ（引数パース、JSON出力、etc）
 ```
 
-`src/infrastructure/plugin_loader.py` が `src/plugins/` ディレクトリを `importlib` でスキャンし、
-`BasePlugin` サブクラスを自動検出・登録する。ファイルを追加するだけで新コマンドとして認識される。
+**cmds/alert/main.py の実装例**:
+
+```python
+#!/usr/bin/env python3
+import sys
+import json
+from cmds.lib.utils import parse_args
+
+def main():
+    # コマンドライン引数を受け取る（sys.argv[1:] から）
+    args = parse_args(sys.argv[1:])
+
+    # ロジック実装
+    if 'host' not in args:
+        # エラーを JSON で出力
+        print(json.dumps({"error": "--host is required"}))
+        sys.exit(1)
+
+    # 成功結果を JSON で出力
+    print(json.dumps({"result": f"Alert for {args['host']}"}))
+    sys.exit(0)
+
+if __name__ == '__main__':
+    main()
+```
+
+**ビルド・デプロイメント方針**:
+
+- `pyproject.toml` で `[project.scripts]` entry_points として定義
+- 例: `chatops-alert = 'cmds.alert.main:main'`
+- `pip install -e .` でインストール時に、各 `main()` 関数が `chatops-alert` 等の実行可能スクリプトとして $PATH に登録される
+
+**コマンド実行時の動作**:
+
+1. ワーカーが `subprocess.run(['chatops-xxx', arg1, arg2, ...], capture_output=True)` で実行
+2. 標準出力（stdout）を取得し、JSON 形式の判定を行う
+3. JSON 形式の場合：
+   - JSON をパースし、`error`, `message`, `result` などのキーを抽出
+   - エラー情報がある場合はそれを Slack に投稿（リトライの対象外に設定）
+   - 成功情報がある場合は `message` または `result` を Slack に投稿
+4. JSON でない場合：
+   - stdout をそのまま Slack メッセージとして投稿
+
+**プラグインの検出・登録**:
+
+`src/infrastructure/plugin_loader.py` は以下の手順でプラグインを検出・登録する：
+
+1. 実行環境の PATH から `chatops-*` で始まる実行可能ファイルを検索
+2. `which chatops-alert` などで実行ファイルのパスを確認
+3. `command_registry` に登録（コマンド名 = 「chatops-」を除いたファイル名）
+4. ロード失敗時はログに出力し、該当コマンドのみスキップ
+
+**セキュリティ考慮**:
+
+- コマンドインジェクション対策: `subprocess` は `shell=False` で実行（list 形式の argv を使用）
+- PATH 検索の安全性: `plugin_command_path` で明示的に信頼できるディレクトリを指定できる（オプション）
+- プラグイン実装時は `cmds.lib.utils` の検証関数を利用してユーザー入力をサニタイズ

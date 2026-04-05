@@ -1,0 +1,50 @@
+Feature: メッセージ永続化とコマンドジョブ登録機能
+  In order to コマンドを確実に処理するために
+  As the ChatOps フレームワーク
+  I want to すべての受信メッセージを永続化し、コマンド検出時に同一トランザクションでジョブを登録する
+
+  Scenario: コマンドを含まない通常メッセージを永続化する
+    Given メッセージ受信 API が起動している
+    And "chatops-alert" shellコマンドが利用可能である
+    When text "Good morning" を含む POST リクエストが届く
+    Then メッセージが DB に保存される
+    And ジョブレコードは作成されない
+
+  Scenario: 有効なコマンドを含むメッセージを永続化しジョブを登録する
+    Given メッセージ受信 API が起動している
+    And "chatops-alert" shellコマンドが利用可能である
+    When text "!alert --host web01" を含む POST リクエストが届く
+    Then メッセージが DB に保存される
+    And コマンド "alert"、引数 "--host web01"、ステータス "pending" のジョブレコードが作成される
+    And ジョブレコードに Slack スレッドのコンテキスト情報が含まれる
+
+  Scenario: 複数コマンドを含むメッセージを拒否する
+    Given メッセージ受信 API が起動している
+    And "chatops-alert" shellコマンドが利用可能である
+    When text "!alert --host web01\n!help" を含む POST リクエストが届く
+    Then メッセージが DB に保存される
+    And ジョブレコードは作成されない
+    And Slack スレッドにエラー通知が投稿される
+
+  Scenario: 未知のコマンドを含むメッセージを拒否する
+    Given メッセージ受信 API が起動している
+    And "chatops-unknown" という名前の shellコマンドは登録されていない
+    When text "!unknown --foo bar" を含む POST リクエストが届く
+    Then メッセージが DB に保存される
+    And ジョブレコードは作成されない
+    And Slack スレッドにエラー通知が投稿される
+
+  Scenario: メッセージ保存とジョブ登録はアトミックに成功・失敗する
+    Given メッセージ受信 API が起動している
+    And "chatops-alert" shellコマンドが利用可能である
+    When text "!alert --host web01" を含む POST リクエストが届く
+    And トランザクション途中で DB 書き込みが失敗する
+    Then メッセージもジョブレコードも永続化されない
+
+  Scenario: コマンドのジョブ登録時に trace_id がジョブレコードに保存される
+    Given メッセージ受信 API が起動している
+    And "chatops-alert" shellコマンドが利用可能である
+    When text "!alert --host web01" を含む POST リクエストが届く
+    Then メッセージが DB に保存される
+    And コマンド "alert" のジョブレコードが作成される
+    And ジョブレコードにリクエストの trace_id が保存されている

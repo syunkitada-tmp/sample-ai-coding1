@@ -7,31 +7,31 @@ def test_parse_kwargs_and_positional():
     result = parse_command("!alert --host web01 app01")
     assert result.name == "alert"
     assert result.kwargs == {"host": "web01"}
-    assert result.args == ["app01"]
+    assert result.args == "app01"
 
 
 def test_parse_kwargs_only():
     result = parse_command("!alert --host web01")
     assert result.kwargs == {"host": "web01"}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_positional_only():
     result = parse_command("!alert app01 app02")
     assert result.kwargs == {}
-    assert result.args == ["app01", "app02"]
+    assert result.args == "app01 app02"
 
 
 def test_parse_flag_kwarg():
     result = parse_command("!deploy --dry-run")
     assert result.kwargs == {"dry-run": True}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_kwarg_equals_syntax():
     result = parse_command("!alert --host=web01")
     assert result.kwargs == {"host": "web01"}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_command_no_args():
@@ -39,7 +39,7 @@ def test_parse_command_no_args():
     assert isinstance(result, ParsedCommand)
     assert result.name == "help"
     assert result.kwargs == {}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_no_command_returns_none():
@@ -76,24 +76,24 @@ def test_parse_quoted_kwarg_value():
     """引用符で囲まれたオプション値はシェルと同様に1トークンとして扱われる"""
     result = parse_command('!alert --msg "hello world"')
     assert result.kwargs == {"msg": "hello world"}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_escaped_space_in_kwarg():
     """バックスラッシュエスケープによるスペースを含むオプション値"""
     result = parse_command(r"!alert --msg hello\ world")
     assert result.kwargs == {"msg": "hello world"}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_single_quoted_kwarg_value():
     """シングルクォートで囲まれたオプション値"""
     result = parse_command("!alert --msg 'foo bar'")
     assert result.kwargs == {"msg": "foo bar"}
-    assert result.args == []
+    assert result.args == ""
 
 
 def test_parse_mixed_kwargs_and_quoted_positional():
     result = parse_command('!deploy --env prod "my app"')
     assert result.kwargs == {"env": "prod"}
-    assert result.args == ["my app"]
+    assert result.args == "my app"
