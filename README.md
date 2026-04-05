@@ -42,18 +42,27 @@ docker compose up --build
 
 `migrate` サービスが自動的に `alembic upgrade head` を実行してから `api` / `worker` が起動します。
 
-### 4. ローカル起動（MySQL 別途用意）
+### 4. ローカル起動（Docker + ローカル Python）
+
+ミドルウェア（MySQL, Slack プロキシ）は Docker Compose で起動し、アプリケーションコードのみをローカル環境（`uv`）で動作させる方法です。コードの反映を即座に確認したい開発時に適しています。
 
 ```bash
-# DB マイグレーション
+# 1. ミドルウェア（DB と Slack プロキシ）を起動
+docker compose up -d db slack_proxy_debug
+
+# 2. DB マイグレーション
 uv run alembic upgrade head
 
-# API サーバー起動
+# 3. API サーバー起動
 uv run uvicorn src.api.main:app --reload
 
-# ワーカー起動（別ターミナル）
+# 4. ワーカー起動（別ターミナル）
 uv run python -m src.worker.main
 ```
+
+> [!IMPORTANT]
+> Docker Compose 経由で MySQL を起動した場合、ホストからは **`3307`** ポートでアクセス可能になります。
+> `.env` 内の `DATABASE_URL` が `localhost:3307` を向いていることを確認してください。
 
 ## 使い方
 
