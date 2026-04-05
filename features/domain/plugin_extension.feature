@@ -1,33 +1,29 @@
-Feature: Plugin-based Command Extension
+Feature: Plugin-based Command Extension (Python Package Format)
   In order to add new commands without modifying the framework core
   As a developer
-  I want the framework to automatically discover and register plugins placed in the plugin directory
+  I want to build and deploy Python command packages that are available as chatops-* executables from the PATH
 
-  Scenario: Framework discovers a new plugin placed in the plugin directory
+  Scenario: Framework discovers a chatops-* executable from a deployed package in PATH
     Given the framework is running
-    And a plugin file defining command "deploy" is placed in the plugin directory
-    When the framework loads plugins
+    And a Python package "cmds/deploy/" with main.py is built and installed as "chatops-deploy" in PATH
+    When the framework loads plugins by scanning PATH for chatops-* executables
     Then the command "deploy" is available for execution
 
-  Scenario: Plugin without a required interface field is rejected at load time
+  Scenario: A non-executable file in PATH is rejected at load time
     Given the framework is running
-    And a plugin file is placed in the plugin directory without a "command_name" field
+    And a file named "chatops-invalid" exists without execute permission
     When the framework loads plugins
-    Then that plugin is not registered
-    And an error is logged indicating the missing field
+    Then that file is not registered as a command
+    And an error is logged indicating the file is not executable
 
-  Scenario: Removing a plugin file makes the command unavailable after reload
-    Given the command "deploy" is registered via a plugin
-    When the plugin file for "deploy" is removed and the framework reloads plugins
+  Scenario: Uninstalling a package makes the command unavailable after reload
+    Given the command "deploy" is registered via a "chatops-deploy" executable (from cmds/deploy/ package)
+    When the package is uninstalled (chatops-deploy removed from PATH) and the framework reloads plugins
     Then the command "deploy" is no longer available
 
-  Scenario Outline: Plugin interface must define all required fields
-    Given a plugin file is placed in the plugin directory missing the "<field>" field
+  Scenario: Only files with chatops- prefix are recognized as commands
+    Given the framework is running
+    And an executable file named "other-command" (without chatops- prefix) exists in PATH
     When the framework loads plugins
-    Then that plugin is rejected with a missing-field error for "<field>"
-
-    Examples:
-      | field        |
-      | command_name |
-      | description  |
-      | execute      |
+    Then "other-command" is not registered as a command
+    And only the chatops- prefixed executables are recognized

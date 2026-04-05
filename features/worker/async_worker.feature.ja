@@ -1,14 +1,16 @@
 Feature: 非同期コマンド実行ワーカー機能
   In order to メッセージ受信 API をブロックせずにコマンドを実行するために
   As the ChatOps フレームワーク
-  I want to ワーカープロセスが DB をポーリングし、pending ジョブを並行実行する
+  I want to ワーカープロセスが DB をポーリングし、pending ジョブを subprocess で並行実行する
 
   Scenario: ワーカーが pending ジョブを取り出して正常実行する
     Given ワーカーが起動している
     And ステータス "pending"、コマンド "alert" のジョブが DB に存在する
+    And "chatops-alert" shellコマンドが実行可能である
     When ワーカーが DB をポーリングする
     Then ジョブのステータスが "processing" に変わる
-    And "alert" のコマンドプラグインが実行される
+    And ワーカーがコマンドライン引数を指定して subprocess で "chatops-alert" を実行する
+    And stdout 出力が取得され解析される（JSON またはプレーンテキスト）
     And ジョブのステータスが "done" に変わる
     And 実行結果がプロキシ API 経由で Slack スレッドに返信される
 
@@ -42,3 +44,36 @@ Feature: 非同期コマンド実行ワーカー機能
     When ワーカーがそのジョブを取り出す
     Then ロギングコンテキストに trace_id "abc-123" が設定される
     And ジョブ実行中のすべてのログエントリに trace_id "abc-123" が含まれる
+
+  Scenario: ワーカーがコマンド実行タイムアウトを一時エラーとして扱う
+    Given ワーカーがコマンドタイムアウト 10 秒で起動している
+    And ステータス "pending"、コマンド "alert" のジョブが存在する
+    And "chatops-alert" subprocess がタイムアウトを超える
+    When ワーカーがジョブを実行する
+    Then subprocess が強制終了される
+    And ジョブはリトライ対象に設定される（retry_count がインクリメント）
+    And ジョブのステータスが "pending" にリセットされる
+
+  Scenario: ワーカーがゼロ以外の終了コードを一時エラーとして扱う
+    Given ワーカーが起動している
+    And ステータス "pending"、コマンド "alert" のジョブが存在する
+    And "chatops-alert" subprocess が終了コード 1 で終了する
+    When ワーカーがジョブを実行する
+    Then ジョブはリトライ対象に設定される（retry_count がインクリメント）
+    And ジョブのステータスが "pending" にリセットされる
+
+  Scenario: ワーカーがコマンド出力の JSON を解析してエラー情報を抽出する
+    Given ワーカーが起動している
+    And ステータス "pending"、コマンド "alert" のジョブが存在する
+    And "chatops-alert" subprocess が出力: {"error": "Invalid host", "code": "ERR_001"}
+    When ワーカーがジョブを実行して出力を JSON として解析する
+    Then エラー情報が抽出され Slack に投稿される
+    And ジョブのステータスが "failed" に設定される（ユーザー入力エラー、リトライ対象外）
+
+  Scenario: ワーカーがコマンド出力が JSON でない場合プレーンテキストをそのまま投稿する
+    Given ワーカーが起動している
+    And ステータス "pending"、コマンド "alert" のジョブが存在する
+    And "chatops-alert" subprocess が出力: "Alert raised for web01"
+    When ワーカーがジョブを実行する
+    Then プレーンテキスト出力が直接 Slack に投稿される
+    And ジョブのステータスが "done" に変わる

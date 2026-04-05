@@ -25,7 +25,7 @@ def _build_executor() -> WorkerExecutor:
     db = next(get_db())
     slack_client = SlackClient(proxy_url=settings.slack_proxy_url)
     plugin_loader = PluginLoader()
-    plugin_loader.load_from_dir(settings.plugin_dir)
+    plugin_loader.load_from_path()
     plugin_loader._registry["help"] = HelpPlugin(plugin_loader=plugin_loader)
 
     job_service = JobService(
@@ -40,6 +40,7 @@ def _build_executor() -> WorkerExecutor:
         plugin_loader=plugin_loader,
         slack_client=slack_client,
         max_workers=settings.worker_max_concurrency,
+        command_timeout=settings.plugin_command_timeout,
     )
 
 

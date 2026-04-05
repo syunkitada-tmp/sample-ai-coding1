@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     worker_max_concurrency: int = 4
     worker_max_retry_count: int = 3
     worker_retry_delay_seconds: int = 60
-    plugin_dir: str = "src/plugins"
+    plugin_command_timeout: int = 30
+    plugin_command_path: str | None = None
 
 
 settings = Settings()

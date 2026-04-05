@@ -40,26 +40,13 @@
 - **Error**: Docker コンテナから MySQL に接続できない (`Can't connect to MySQL server on 'localhost'`)
   **Fix**: コンテナ間通信はサービス名（`db`）をホスト名として使う。`docker-compose.yml` の各サービスに `environment.DATABASE_URL: mysql+pymysql://root:password@db:3306/chatops` を追記して `.env` の `localhost` 設定を上書きすること
 
-- **Error**: `HelpPlugin.__init__() missing 1 required positional argument: 'plugin_loader'`（plugin_loader の自動スキャン時）
-  **Fix**: `register_from_module` でのインスタンス化時に `TypeError` が出た場合はスキップし、手動登録に委ねる。`api/dependencies.py` と `worker/main.py` の両方で `load_from_dir` 後に `plugin_loader._registry["help"] = HelpPlugin(plugin_loader=plugin_loader)` を追記すること
-
 ## 3. Implementation Patterns
 
 - **ORM モデルの `default`**: `datetime.now(UTC)` は `default=_utcnow`（callable）として渡す。`default=datetime.now(UTC)` だとモジュール読み込み時の値が固定されてしまうため注意
 
 - **設定の DI**: `src/infrastructure/db.py` のエンジンは `@lru_cache` で遅延初期化。テスト時は `conftest.py` が独自セッションを提供するため DB 接続は発生しない
 
-- **ABC サブクラスのテスト用モック**: `BasePlugin` の ABC サブクラスをテストヘルパーで生成する場合、`execute` をラムダで後付け代入しても `__abstractmethods__` が残るためインスタンス化できない。必ずクラス本体で `def execute(...)` を実装すること
 
-  ```python
-  # NG: ラムダ後付け代入はインスタンス化時に TypeError
-  DummyPlugin.execute = lambda self, args, ctx: "ok"
-
-  # OK: クラス本体で実装
-  class DummyPlugin(BasePlugin):
-      def execute(self, args, thread_context):
-          return "ok"
-  ```
 
 - **トランザクションのロールバック**: `session.commit()` が例外を投げたとき、`session.add()` 済みオブジェクトはセッションのアイデンティティマップ上に残る。後続の `session.query(...).count()` が autoflush で DB に書き込んでしまうため、commit 失敗時には必ず `session.rollback()` を呼ぶこと
 
@@ -77,11 +64,11 @@
 
 - **`SELECT FOR UPDATE SKIP LOCKED` の SQLite 互換**: SQLite は SKIP LOCKED を非対応のため例外を投げる。`try/except` で SKIP LOCKED なし版にフォールバックする実装にすることでユニットテストが MySQL なしで通る
 
-- **`Job.args` の Worker 側復元**: `json.loads(job.args)` で `{"kwargs": {...}, "args": "..."}` を取り出し、`plugin.execute(kwargs=..., args=..., thread_context=...)` に渡す
+- **`Job.args` の Worker 側復元とシェルコマンド起動**: `json.loads(job.args)` で `{"kwargs": {...}, "args": "..."}` を取り出し、シェルコマンドの引数（`--key value` および位置引数）として再構築して `subprocess.run` に渡す。
 
-- **`NoRetryError` パターン**: プラグインがリトライ不要の失敗を表現したい場合は `NoRetryError` を raise する。`executor._execute_job()` がこれを捕捉し `job_service.mark_failed_no_retry()` を呼ぶ。`mark_failed()` は呼ばれず retry_count も変化しない
+- **`NoRetryError` パターン**: プラグインがリトライ不要のユーザー指定エラーを表現したい場合は、JSON標準出力の `error` キー（例: `{"error": "ホスト名が不正です"}`）を含めて exit >= 1 を返す。`executor` がこれを `NoRetryError` に落とし込無事で `mark_failed_no_retry()` が呼ばれる。
 
-- **コンストラクタ引数が必要なプラグインの登録**: `plugin_loader.load_from_dir()` は引数なしでインスタンス化できるプラグインのみ自動登録する。`HelpPlugin` のように DI が必要なプラグインは `load_from_dir` 後に手動で `_registry` に登録すること（`api/dependencies.py` と `worker/main.py` の両方で行う）
+- **シェルコマンドの出力パース**: JSON出力の `result` または `message` キーがあればその値をSlackメッセージに用いる。JSON以外の場合は生の標準出力をそのまま返信する。
 
 - **構造化ログ / trace_id 管理**: `src/lib/logging.py` に集約。`configure_logging()` を API・Worker 両プロセスの起動時に呼ぶ。`set_trace_id()` / `get_trace_id()` で ContextVar を操作する。`ThreadPoolExecutor` スレッドでは ContextVar が引き継がれないため、`_execute_job` 冒頭で `set_trace_id(job.trace_id or "-")` を明示的に呼ぶこと
 

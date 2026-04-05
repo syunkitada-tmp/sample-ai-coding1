@@ -1,24 +1,26 @@
 Feature: ダミーアラートコマンド機能
-  In order to プラグイン開発のリファレンス実装を提供するために
+  In order to shellベースのコマンド開発のリファレンス実装を提供するために
   As a 開発者
-  I want to ビルトインの "!alert" ダミーコマンドが受け取った引数とスレッド情報をそのまま Slack に返す
+  I want to ビルトインの "!alert" ダミーコマンド（chatops-alert）が受け取った引数を JSON またはプレーンテキストで返す
 
   Scenario: --host オプション付きで !alert を正常実行する
-    Given "alert" プラグインが登録されている
+    Given "chatops-alert" shellコマンドが実行可能である
     And コマンド "alert"、引数 "--host web01"、有効なスレッドコンテキストを持つジョブが存在する
-    When ワーカーがそのジョブを実行する
+    When ワーカーが subprocess 経由でジョブを実行する
     Then ジョブのステータスが "done" に変わる
-    And Slack スレッドに "--host web01" とスレッドコンテキストを含む返信が届く
+    And stdout 出力が解析される（JSON またはプレーンテキスト）
+    And Slack スレッドに解析結果を含む返信が届く
 
   Scenario: --host オプションと位置引数を両方指定して !alert を実行する
-    Given "alert" プラグインが登録されている
+    Given "chatops-alert" shellコマンドが実行可能である
     And コマンド "alert"、引数 "--host web01 app01" のジョブが存在する
-    When ワーカーがそのジョブを実行する
-    Then Slack スレッドに "--host web01" と "app01" を含む返信が届く
+    When ワーカーが subprocess 経由でジョブを実行する
+    Then Slack スレッドに解析結果を含む返信が届く
 
-  Scenario: --host オプションが指定されていない場合は失敗する
-    Given "alert" プラグインが登録されている
+  Scenario: --host オプションが指定されていない場合は一時エラーとなる
+    Given "chatops-alert" shellコマンドが実行可能である
     And --host オプションなしでコマンド "alert"、引数 "app01" のジョブが存在する
     When ワーカーがそのジョブを実行する
-    Then ジョブのステータスがリトライなしで "failed" に変わる
-    And Slack スレッドに "--host is required" を示すエラー返信が届く
+    And subprocess がゼロ以外の終了コードで終了する
+    Then ジョブはリトライ対象に設定される（一時エラーとみなされ、最終失敗ではない）
+    And コマンド出力が JSON 形式でエラーメッセージを含む場合、そのメッセージが Slack に投稿される

@@ -97,6 +97,7 @@ class TestWorkerExecutor:
             plugin_loader=plugin_loader,
             slack_client=slack,
             max_workers=4,
+            command_timeout=30,
         )
         executor.run_once()  # 投入（sync_pool なので即座実行完了）
         executor.run_once()  # 完了済み Future を回収
@@ -120,6 +121,7 @@ class TestWorkerExecutor:
             plugin_loader=plugin_loader,
             slack_client=slack,
             max_workers=4,
+            command_timeout=30,
         )
         executor.run_once()
         executor.run_once()  # 完了済み Future を回収
@@ -142,6 +144,7 @@ class TestWorkerExecutor:
             plugin_loader=plugin_loader,
             slack_client=slack,
             max_workers=4,
+            command_timeout=30,
         )
         executor.run_once()
         executor.run_once()
@@ -162,6 +165,7 @@ class TestWorkerExecutor:
             plugin_loader=MagicMock(),
             slack_client=MagicMock(),
             max_workers=4,
+            command_timeout=30,
         )
         executor.run_once()
         job_svc.mark_done.assert_not_called()
@@ -181,6 +185,7 @@ class TestWorkerExecutor:
             plugin_loader=plugin_loader,
             slack_client=slack,
             max_workers=3,
+            command_timeout=30,
         )
         executor.run_once()
         executor.run_once()  # 完了済み Future を回収
@@ -205,6 +210,7 @@ class TestWorkerExecutor:
             plugin_loader=_make_plugin_loader(succeed=True),
             slack_client=MagicMock(),
             max_workers=2,
+            command_timeout=30,
         )
         executor.run_once()  # batch1 を投入（sync_pool で即座実行完了）
         executor.run_once()  # Future 回収 + batch2 を投入
@@ -240,6 +246,7 @@ class TestWorkerExecutor:
             plugin_loader=plugin_loader,
             slack_client=slack,
             max_workers=4,
+            command_timeout=30,
         )
         set_trace_id(None)  # 事前にリセット
         executor.run_once()
@@ -247,3 +254,145 @@ class TestWorkerExecutor:
 
         assert captured == ["job-trace-abc"]
         set_trace_id(None)  # クリーンアップ
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_success_json(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+
+        mock_run.return_value = MagicMock(returncode=0, stdout='{"result": "alert ok"}')
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        mock_run.assert_called_once()
+        args = mock_run.call_args[0][0]
+        assert args[0] == "/path/to/alert"
+        assert "--host" in args
+        assert "web01" in args
+
+        slack.post_message.assert_called_once()
+        assert slack.post_message.call_args[1]["text"] == "alert ok"
+        job_svc.mark_done.assert_called_once_with(job)
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_success_plaintext(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+
+        mock_run.return_value = MagicMock(returncode=0, stdout='plain text output')
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        slack.post_message.assert_called_once()
+        assert slack.post_message.call_args[1]["text"] == "plain text output"
+        job_svc.mark_done.assert_called_once_with(job)
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_timeout(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+        import subprocess
+
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="test", timeout=30)
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        job_svc.mark_failed.assert_called_once()
+        assert "Command timed out" in job_svc.mark_failed.call_args[1]["reason"]
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_not_found(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+
+        mock_run.side_effect = FileNotFoundError()
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        job_svc.mark_failed_no_retry.assert_called_once()
+        assert "Command not found" in job_svc.mark_failed_no_retry.call_args[1]["reason"]
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_error_json(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+
+        mock_run.return_value = MagicMock(returncode=1, stdout='{"error": "user error"}', stderr="")
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        job_svc.mark_failed_no_retry.assert_called_once()
+        assert "user error" in job_svc.mark_failed_no_retry.call_args[1]["reason"]
+
+    @patch("src.worker.executor.subprocess.run")
+    def test_execute_shell_error_nonzero_exit(self, mock_run):
+        from src.worker.executor import WorkerExecutor
+        from src.domain.interfaces.plugin import CommandRegistry
+
+        mock_run.return_value = MagicMock(returncode=1, stdout='some output', stderr="some error")
+        job = _make_mock_job()
+        job_svc = _make_job_service(claimed_jobs=[job])
+        plugin_loader = MagicMock()
+        plugin_loader.get.return_value = CommandRegistry("alert", "/path/to/alert", "desc")
+        slack = MagicMock()
+
+        executor = WorkerExecutor(
+            job_service=job_svc, plugin_loader=plugin_loader, slack_client=slack,
+            max_workers=1, command_timeout=30,
+        )
+        executor.run_once()
+        executor.run_once()
+
+        job_svc.mark_failed.assert_called_once()
+        assert "some error" in job_svc.mark_failed.call_args[1]["reason"]
+

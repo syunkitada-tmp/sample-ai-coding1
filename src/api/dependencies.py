@@ -12,7 +12,7 @@ from src.plugins.help import HelpPlugin
 
 # シングルトンのプラグインローダー（アプリ起動時に一度だけ初期化）
 _plugin_loader = PluginLoader()
-_plugin_loader.load_from_dir(settings.plugin_dir)
+_plugin_loader.load_from_path()
 # HelpPlugin は plugin_loader をコンストラクタ引数に取るため手動登録
 _plugin_loader._registry["help"] = HelpPlugin(plugin_loader=_plugin_loader)
 
