@@ -1,7 +1,5 @@
 ---
 description: "プロジェクト変更 Phase 1: 変更内容を相談し、影響分析を含む提案書 (spec/PROPOSAL.md) を作成します。"
-agent: "agent"
-argument-hint: "変更内容の概要を入力してください"
 ---
 
 # Phase 1: 提案 & 影響分析
@@ -107,4 +105,4 @@ argument-hint: "変更内容の概要を入力してください"
 > **Phase 1 完了！** `spec/PROPOSAL.md` が確定しました。
 >
 > 次は **Phase 2: 仕様更新** です。提案内容に基づき、既存の仕様ファイルを更新します。
-> 準備ができたら `/change2` を実行してください。
+> 準備ができたら `@skill change2` を実行してください。

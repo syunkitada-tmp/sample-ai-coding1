@@ -1,6 +1,5 @@
 ---
 description: "変更完了後に git add & commit を実行します。Conventional Commits 形式でコミットメッセージを生成します。"
-agent: "agent"
 ---
 
 # Git Commit
